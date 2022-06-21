@@ -17,11 +17,6 @@ package types
 import (
 	"fmt"
 	"regexp"
-	// "strings"
-
-	// "github.com/datacommonsorg/mixer/internal/parser/tmcf"
-	// "google.golang.org/grpc/codes"
-	// "google.golang.org/grpc/status"
 )
 
 const (

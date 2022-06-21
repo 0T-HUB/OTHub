@@ -122,26 +122,47 @@ func (p *Parser) parsePrologue() (*Prologue, *ParseError) {
 }
 
 func (p *Parser) parseSelect() (*Select, *ParseError) {
+	fmt.Println("1")
 	result := Select{}
+	fmt.Println("2")
 	tok, pos, lit := p.ScanIgnoreWhitespace()
+
+	fmt.Println(tok)
+
+	fmt.Println("3")
 	if tok != SELECT {
 		return nil, newParseError(tokstr(tok, lit), []string{"SELECT"}, pos)
 	}
+	fmt.Println("4")
 	tok, _, _ = p.ScanIgnoreWhitespace()
+	fmt.Println("5")
 	if tok == DISTINCT {
+		fmt.Println("6")
 		result.Distinct = true
 	} else {
+		fmt.Println("7")
 		p.Unscan()
 	}
+	fmt.Println("8")
 	for {
+		fmt.Println("9")
 		tok, pos, lit := p.ScanIgnoreWhitespace()
+		fmt.Println("10")
 		if tok == FROM || tok == WHERE || tok == EOF {
+			fmt.Println("11")
 			p.Unscan()
 			return &result, nil
 		}
 		if tok != VARIABLE {
-			return nil, newParseError(tokstr(tok, lit), []string{"?..."}, pos)
+			fmt.Println("12")
+			e := newParseError(tokstr(tok, lit), []string{"?..."}, pos)
+			fmt.Printf("Message: %v\n", e.Message)
+			fmt.Printf("Found: %v\n", e.Found)
+			fmt.Printf("Expected: %v\n", e.Expected)
+			fmt.Printf("Pos: %v\n", e.Pos)
+			return nil, e
 		}
+		fmt.Println("13")
 		result.Variable = append(result.Variable, lit)
 	}
 }
@@ -262,22 +283,27 @@ func (p *Parser) parseLimit() (int, *ParseError) {
 func (p *Parser) Parse() (*QueryTree, *ParseError) {
 	prologue, err := p.parsePrologue()
 	if err != nil {
+		fmt.Println("prologue")
 		return nil, err
 	}
 	sel, err := p.parseSelect()
 	if err != nil {
+		fmt.Println("select")
 		return nil, err
 	}
 	where, err := p.parseWhere()
 	if err != nil {
+		fmt.Println("where")
 		return nil, err
 	}
 	orderby, err := p.parseOrderBy()
 	if err != nil {
+		fmt.Println("orderby")
 		return nil, err
 	}
 	limit, err := p.parseLimit()
 	if err != nil {
+		fmt.Println("limit")
 		return nil, err
 	}
 	return &QueryTree{P: prologue, S: sel, W: where, O: orderby, L: limit}, nil

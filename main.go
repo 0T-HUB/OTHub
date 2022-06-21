@@ -1,20 +1,22 @@
 package main
 
 import (
-	"dkg-client-go/sparkqlParser"
+	"dkg-client-go/sparqlParser"
 )
 
 func main() {
 
-	q := `
-	SELECT ?dcid,
-				typeOf ?parent_node Place,
-				typeOf ?node Place,
-				subType ?node City,
-				countryAlpha2Code ?node "country-code",
-				containedInPlace ?node ?parent_node,
-				dcid ?parent_node "dc/x333",
-				dcid ?node ?dcid`
+
+q := `
+PREFIX schema:   <http://schema.org/>
+CONSTRUCT { ?s ?p ?o }
+WHERE
+{
+  GRAPH ?g
+    { ?s ?p ?o .
+    ?s schema:hasVisibility ?v }
+}
+`
 
  	_, _, _, err := sparql.ParseQuery(q)
  	if err != nil {
