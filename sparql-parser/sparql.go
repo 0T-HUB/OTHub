@@ -18,7 +18,7 @@ package sparql
 import (
 	"strings"
 
-	"dkg-client-go/sparqlParser/types"
+	"dkg-client-go/sparql-parser/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
