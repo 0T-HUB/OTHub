@@ -3,8 +3,10 @@ package client
 import (
 	"fmt"
 	"time"
+	"net/url"
 	"net/http"
 	"errors"
+	"encoding/json"
 
 	"github.com/ivpusic/golog"
 )
@@ -73,6 +75,24 @@ func NewAbstractClient(options AbstractClientOptions) (abstractClient, error) {
 
 }
 
+//
+// Get node information (version, is auto upgrade enabled, is telemetry enabled)
+//
+
+func (ac *abstractClient) nodeInfo() (*http.Response, error) {
+	ac.Logger.Debug("Sending node info request")
+
+	client := http.Client{
+    	Timeout: time.Duration(defaultTimeoutInSeconds * 1000) * time.Second,
+	}
+
+	resp, err := client.Get(fmt.Sprintf("%s/info", ac.nodeBaseUrl))
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil	
+}
+
 func (ac *abstractClient) sendNodeInfoRequest() error {
 	ac.Logger.Debug("Sending node info request")
 
@@ -86,3 +106,95 @@ func (ac *abstractClient) sendNodeInfoRequest() error {
 	}
 	return nil
 }
+
+func (ac *abstractClient) publishRequest(options PublishRequestOptions) (*http.Response, error) {
+	ac.Logger.Debug("Sending node info request")
+
+    form := url.Values{}
+
+    if (options.Filepath != "") {
+		form.Set("file", "foo") // TODO
+    } else {
+    	form.Set("data", options.Data)
+    }
+
+    jsonKeywords, err := json.Marshal(options.Keywords)
+    if err != nil {
+    	return nil, errors.New("Could not convert the keywords to JSON")
+    }
+    form.Set("keywords", string(jsonKeywords))
+
+    if options.UAL != "" {
+    	form.Set("ual", options.UAL)
+    }
+
+    client := &http.Client{}
+
+    formUrl := fmt.Sprintf("%s/%s", ac.nodeBaseUrl, options.Method)
+
+    resp, err := client.PostForm(formUrl, form)
+    if err != nil {
+        return nil, errors.New("Could not send publish request form")
+    }
+
+    return resp, nil
+}
+
+func (ac *abstractClient) Resolve(options ResolveRequestOptions) (*http.Response, error) {
+	if len(options.ids) == 0 {
+		return nil, errors.New("Please provide resolve options in order to resolve")
+	}
+
+	resp, err := ac.resolveRequest(options)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO getResult
+
+}
+
+func (ac *abstractClient) resolveRequest(options ResolveRequestOptions) (*http.Response, error) {
+	ac.Logger.Debug("Sending resolve request")
+
+	idsForm := url.Values{}
+
+	for i := range options.IDS {
+        idsForm.Add("ids", options.IDS[i])
+    }
+
+    client := &http.Client{}
+
+    formUrl := fmt.Sprintf("%s/resolve?%s", ac.nodeBaseUrl, idsForm.Encode())
+
+    req, err := http.NewRequest(http.MethodGet, formUrl, nil)
+    if err != nil {
+    	return nil, errors.New("Wrong ids or url provided")
+    }
+    req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, errors.New("Could not send resolve request form")
+	}
+
+    return resp, nil
+
+}
+
+
+func (ac *abstractClient) Search(options SearchRequestOptions) {
+
+}
+
+func (ac *abstractClient) searchRequest(options SearchRequestOptions) {
+	ac.Logger.Debug("Sending search request")
+
+	searchForm := url.Values{}
+
+	var prefix bool
+	if 
+
+}
+
+
