@@ -1,10 +1,10 @@
 package main
 
 import (
-  // "fmt"
+	// "fmt"
 	// "dkg-client-go/client"
-  "dkg-client-go/parser"
-  // "github.com/antlr/antlr4/runtime/Go/antlr"
+	"dkg-client-go/parser"
+	// "github.com/antlr/antlr4/runtime/Go/antlr"
 )
 
 var query = `PREFIX schema: <http://schema.org/>
@@ -16,9 +16,9 @@ var query = `PREFIX schema: <http://schema.org/>
             }}`
 
 func main() {
-  sc := parser.NewSparqlSyntaxCheck()
-  err := sc.Check(query)
-  if err != nil {
-    panic(err)
-  }
+	sc := parser.NewSparqlSyntaxCheck()
+	err := sc.Check(query)
+	if err != nil {
+		panic(err)
+	}
 }
