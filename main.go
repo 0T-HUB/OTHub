@@ -2,7 +2,7 @@ package main
 
 import (
 	// "fmt"
-	// "dkg-client-go/client"
+	_ "dkg-client-go/client"
 	"dkg-client-go/parser"
 	// "github.com/antlr/antlr4/runtime/Go/antlr"
 )

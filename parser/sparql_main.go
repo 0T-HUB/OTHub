@@ -2,17 +2,18 @@ package parser
 
 import (
 	"errors"
+
 	"github.com/antlr/antlr4/runtime/Go/antlr"
 )
 
 type sparqlListener struct {
-  *BaseSparqlListener
+	*BaseSparqlListener
 }
 
 type CustomErrorListener struct {
-  *antlr.DefaultErrorListener // Embed default which ensures we fit the interface
-  haveError bool
-  Message string
+	*antlr.DefaultErrorListener // Embed default which ensures we fit the interface
+	haveError                   bool
+	Message                     string
 }
 
 func (c *CustomErrorListener) SyntaxError(recognizer antlr.Recognizer, offendingSymbol interface{}, line, column int, msg string, e antlr.RecognitionException) {
@@ -20,19 +21,19 @@ func (c *CustomErrorListener) SyntaxError(recognizer antlr.Recognizer, offending
 	c.Message = msg
 }
 
-type sparqlSyntaxCheck struct {
-	lexerErrors *CustomErrorListener
+type SparqlSyntaxCheck struct {
+	lexerErrors  *CustomErrorListener
 	parserErrors *CustomErrorListener
 }
 
-func NewSparqlSyntaxCheck() sparqlSyntaxCheck {
+func NewSparqlSyntaxCheck() SparqlSyntaxCheck {
 	l := &CustomErrorListener{}
 	p := &CustomErrorListener{}
 
-	return sparqlSyntaxCheck{l, p}
+	return SparqlSyntaxCheck{l, p}
 }
 
-func (sc *sparqlSyntaxCheck) Check(query string) error {
+func (sc *SparqlSyntaxCheck) Check(query string) error {
 	// Setup the input
 	is := antlr.NewInputStream(query)
 
