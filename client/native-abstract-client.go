@@ -1,3 +1,7 @@
+// EXPLANATION
+// Go doesn't support struct extending/inheritance, so to deal with this,
+// this file includes NativeClient and AbstractClient in one Single Client
+
 package client
 
 import (
@@ -5,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"time"
@@ -34,7 +39,7 @@ type AbstractClientOptions struct {
 	MaxNumberOfRetries int         // optional
 }
 
-type abstractClient struct {
+type nativeAbstractClient struct {
 	LogLevel           golog.Level
 	MaxNumberOfRetries int
 	nodeBaseUrl        string
@@ -42,8 +47,8 @@ type abstractClient struct {
 	Parser             parser.SparqlSyntaxCheck
 }
 
-func NewAbstractClient(options AbstractClientOptions) (abstractClient, error) {
-	ac := new(abstractClient)
+func newNativeAbstractClient(options AbstractClientOptions) (nativeAbstractClient, error) {
+	ac := new(nativeAbstractClient)
 
 	if options.LogLevel == nil {
 		ac.LogLevel = golog.ERROR
@@ -73,7 +78,7 @@ func NewAbstractClient(options AbstractClientOptions) (abstractClient, error) {
 	ac.Parser = parser.NewSparqlSyntaxCheck()
 
 	if ac.sendNodeInfoRequest() != nil {
-		return abstractClient{}, errors.New("Endpoint not available")
+		return nativeAbstractClient{}, errors.New("Endpoint not available")
 	}
 
 	return *ac, nil
@@ -84,7 +89,7 @@ func NewAbstractClient(options AbstractClientOptions) (abstractClient, error) {
 // Get node information (version, is auto upgrade enabled, is telemetry enabled)
 //
 
-func (ac *abstractClient) nodeInfo() (*http.Response, error) {
+func (ac *nativeAbstractClient) nodeInfo() (*http.Response, error) {
 	ac.Logger.Debug("Sending node info request")
 
 	client := http.Client{
@@ -98,7 +103,7 @@ func (ac *abstractClient) nodeInfo() (*http.Response, error) {
 	return resp, nil
 }
 
-func (ac *abstractClient) sendNodeInfoRequest() error {
+func (ac *nativeAbstractClient) sendNodeInfoRequest() error {
 	ac.Logger.Debug("Sending node info request")
 
 	client := http.Client{
@@ -120,7 +125,7 @@ type PublishRequestOptions struct {
 	UAL      string
 }
 
-func (ac *abstractClient) publishRequest(options PublishRequestOptions) (*http.Response, error) {
+func (ac *nativeAbstractClient) publishRequest(options PublishRequestOptions) (*http.Response, error) {
 	ac.Logger.Debug("Sending node info request")
 
 	form := url.Values{}
@@ -157,7 +162,7 @@ type ResolveRequestOptions struct {
 	IDS []string
 }
 
-func (ac *abstractClient) Resolve(options ResolveRequestOptions) ([]byte, error) { //DONE
+func (ac *nativeAbstractClient) Resolve(options ResolveRequestOptions) ([]byte, error) { //DONE
 	if len(options.IDS) == 0 {
 		return nil, errors.New("Please provide resolve options in order to resolve")
 	}
@@ -191,7 +196,7 @@ func (ac *abstractClient) Resolve(options ResolveRequestOptions) ([]byte, error)
 
 }
 
-func (ac *abstractClient) resolveRequest(options ResolveRequestOptions) (*http.Response, error) {
+func (ac *nativeAbstractClient) resolveRequest(options ResolveRequestOptions) (*http.Response, error) {
 	ac.Logger.Debug("Sending resolve request")
 
 	idsForm := url.Values{}
@@ -230,7 +235,7 @@ type SearchRequestOptions struct {
 	Timeout          int
 }
 
-func (ac *abstractClient) Search(options SearchRequestOptions) ([]byte, error) { //DONE
+func (ac *nativeAbstractClient) Search(options SearchRequestOptions) ([]byte, error) { //DONE
 	if options.Query == "" || options.ResultType == "" {
 		return nil, errors.New("Please provide search options in order to search")
 	}
@@ -266,7 +271,7 @@ func (ac *abstractClient) Search(options SearchRequestOptions) ([]byte, error) {
 	return resp, nil
 }
 
-func (ac *abstractClient) searchRequest(options SearchRequestOptions) ([]byte, error) { //DONE
+func (ac *nativeAbstractClient) searchRequest(options SearchRequestOptions) ([]byte, error) { //DONE
 	ac.Logger.Debug("Sending search request")
 
 	searchForm := url.Values{}
@@ -315,7 +320,7 @@ type SearchResultOptions struct { //DONE
 	NumbersOfResults int
 }
 
-func (ac *abstractClient) getSearchResult(options SearchResultOptions) ([]byte, error) { //DONE
+func (ac *nativeAbstractClient) getSearchResult(options SearchResultOptions) ([]byte, error) { //DONE
 	if options.HandlerId == 0 {
 		return nil, errors.New("Unable to get results, need handler id")
 	}
@@ -383,7 +388,7 @@ func (ac *abstractClient) getSearchResult(options SearchResultOptions) ([]byte, 
 
 }
 
-func (ac *abstractClient) Query(options QueryOptions) ([]byte, error) {
+func (ac *nativeAbstractClient) Query(options QueryOptions) ([]byte, error) {
 	if options.Query == "" {
 		return nil, errors.New("Please provide options in order to query")
 	}
@@ -415,7 +420,7 @@ type QueryOptions struct {
 	Type  string
 }
 
-func (ac *abstractClient) queryRequest(options QueryOptions) ([]byte, error) { //DONE
+func (ac *nativeAbstractClient) queryRequest(options QueryOptions) ([]byte, error) { //DONE
 	ac.Logger.Debug("Sending query request")
 
 	err := ac.Parser.Check(options.Query)
@@ -452,7 +457,7 @@ type ValidateOptions struct {
 	Nquads []string
 }
 
-func (ac *abstractClient) Validate(options ValidateOptions) (*http.Response, error) {
+func (ac *nativeAbstractClient) Validate(options ValidateOptions) (*http.Response, error) {
 	if len(options.Nquads) == 0 {
 		return nil, errors.New("Please provide assertions and nquads in order to get proofs")
 	}
@@ -488,7 +493,7 @@ func (ac *abstractClient) Validate(options ValidateOptions) (*http.Response, err
 
 }
 
-func (ac *abstractClient) getProofsRequest(options ValidateOptions) ([]byte, error) {
+func (ac *nativeAbstractClient) getProofsRequest(options ValidateOptions) ([]byte, error) {
 	ac.Logger.Debug("Sending get proofs request")
 
 	jsonNquads, err := json.Marshal(options.Nquads)
@@ -517,8 +522,74 @@ func (ac *abstractClient) getProofsRequest(options ValidateOptions) ([]byte, err
 	return b, nil
 }
 
-func (ac *abstractClient) performValidation(assertions) {
-	// TODO response.data
+type AssertionType []struct {
+	AssertionID string `json:"assertionId"`
+	Proofs      []struct {
+		Triple     string `json:"triple"`
+		TripleHash string `json:"tripleHash"`
+		Proof      []struct {
+			Right string `json:"right,omitempty"`
+			Left  string `json:"left,omitempty"`
+		} `json:"proof"`
+	} `json:"proofs"`
+}
+
+type validatedTriple struct {
+	Triple string
+	Valid  bool
+}
+
+func (ac *nativeAbstractClient) performValidation(assertions []byte) []validatedTriple {
+	validationResult := make([]validatedTriple, 0)
+
+	var out AssertionType
+	err := json.Unmarshal([]byte(assertions), &out)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, assertion := range out {
+		rootHash := ac.fetchRootHash(assertion.AssertionID)
+		for _, obj := range assertion.Proofs {
+			v := validatedTriple{obj.Triple, false}
+
+			if len(obj.Proof) == 0 {
+				ac.Logger.Debug(fmt.Sprintf("%s has no proof in assertion %s", obj.Triple, assertion.AssertionID))
+				continue
+			}
+
+			verified := ac.validateProof(obj, rootHash)
+
+			v.Valid = true
+			validationResult = append(validationResult, v)
+
+			if verified {
+				ac.Logger.Debug(fmt.Sprintf("Validation successful for data: %v", obj))
+			} else {
+				ac.Logger.Debug(fmt.Sprintf("Invalid data: %v", obj))
+			}
+		}
+	}
+
+	return validationResult
+}
+
+// TODO because of wrong api?
+func (ac *nativeAbstractClient) fetchRootHash(assertionId string) (string, error) {
+	result, err := ac.Resolve(ResolveRequestOptions{[]string{assertionId}})
+	if err != nil {
+		return "", err
+	}
+
+	resolveResponse := make(map[string]interface{})
+
+	// transform response to json struct
+	if err := json.Unmarshal([]byte(b), &resolveResponse); err != nil {
+		return nil, errors.New("Could not unmarshal resolve request response")
+	}
+
+	return result, err
+
 }
 
 type GetResultOptions struct {
@@ -526,7 +597,7 @@ type GetResultOptions struct {
 	Operation string
 }
 
-func (ac *abstractClient) getResult(options GetResultOptions) ([]byte, error) { //DONE
+func (ac *nativeAbstractClient) getResult(options GetResultOptions) ([]byte, error) { //DONE
 
 	// channel that will receive when 500 ms have passed
 	timeoutFlag := make(chan bool, 1)
