@@ -6,12 +6,11 @@ import (
 )
 
 type assetsClient struct {
-	Client          *nativeAbstractClient
-	AssetsProxyPath int //FOR NOW...
+	Client *nativeAbstractClient
 }
 
-func newAssetsClient(nac *nativeAbstractClient, AssetsProxyPath int) (assetsClient, error) {
-	return assetsClient{nac, 0}, nil
+func newAssetsClient(nac *nativeAbstractClient) (assetsClient, error) {
+	return assetsClient{nac}, nil
 }
 
 type CreateOptions struct {
@@ -27,7 +26,7 @@ func (ac *assetsClient) Create(options CreateOptions) ([]byte, error) {
 
 	opt := PublishRequestOptions{"provision", options.Data, options.Filepath, options.Keywords, ""}
 
-	resp, err := ac.Client.publishRequest(opt)
+	resp, err := ac.Client.Publish(opt)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +59,7 @@ func (ac *assetsClient) Update(ual string, options CreateOptions) ([]byte, error
 
 	opt := PublishRequestOptions{"update", options.Data, options.Filepath, options.Keywords, ual}
 
-	resp, err := ac.Client.publishRequest(opt)
+	resp, err := ac.Client.Publish(opt)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +114,7 @@ func (ac *assetsClient) GetStateCommitHashes(ual string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return resp
+	return resp, nil
 }
 
 func (ac *assetsClient) transfer() {}

@@ -12,6 +12,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.7 // indirect
 	github.com/ivpusic/go-clicolor v0.0.0-20150828210804-23f0b77f328a // indirect
+	github.com/nebulouslabs/merkletree v0.0.0-20181203152040-08d5d54b07f5 // indirect
 	github.com/shiena/ansicolor v0.0.0-20200904210342-c7312218db18 // indirect
 	golang.org/x/net v0.0.0-20220325170049-de3da57026de // indirect
 	golang.org/x/sys v0.0.0-20220330033206-e17cdc41300f // indirect

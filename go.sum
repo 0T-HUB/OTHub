@@ -52,6 +52,8 @@ github.com/ivpusic/go-clicolor v0.0.0-20150828210804-23f0b77f328a h1:C719vWPNIn8
 github.com/ivpusic/go-clicolor v0.0.0-20150828210804-23f0b77f328a/go.mod h1:0SFPvHdCWDlfm+uc7SYrZ30bF1sH1O1iEzBkvscKVqg=
 github.com/ivpusic/golog v0.0.0-20170608213328-28640bee649f h1:FaZoTHC/do/ABnS4SLlgmILuimaaiSDcqBdGc13xJFA=
 github.com/ivpusic/golog v0.0.0-20170608213328-28640bee649f/go.mod h1:EjZtQ4YORF5NXI9IZ+zcbIye4yhMFEwZjn1B0GeH88Q=
+github.com/nebulouslabs/merkletree v0.0.0-20181203152040-08d5d54b07f5 h1:WjSSdk5Wqq7CJYIER13T70JSq3nJFgdwzN1Bq5ynEgk=
+github.com/nebulouslabs/merkletree v0.0.0-20181203152040-08d5d54b07f5/go.mod h1:EpZRKdFTAywbRluw3t3L/123V24JRqboW31mFFDYqjs=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4/go.mod h1:xMI15A0UPsDsEKsMN9yxemIoYk6Tm2C1GtYGdfGttqA=
