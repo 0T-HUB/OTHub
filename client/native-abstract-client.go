@@ -35,8 +35,8 @@ type AbstractClientOptions struct {
 	Endpoint           string
 	Port               int
 	UseSSL             bool
-	LogLevel           golog.Level // optional
-	MaxNumberOfRetries int         // optional
+	LogLevel           golog.Level
+	MaxNumberOfRetries int
 }
 
 type nativeAbstractClient struct {
@@ -50,11 +50,7 @@ type nativeAbstractClient struct {
 func newNativeAbstractClient(options AbstractClientOptions) (nativeAbstractClient, error) {
 	ac := new(nativeAbstractClient)
 
-	if options.LogLevel == nil {
-		ac.LogLevel = golog.ERROR
-	} else {
-		ac.LogLevel = options.LogLevel
-	}
+	ac.LogLevel = options.LogLevel
 
 	if options.MaxNumberOfRetries > 0 {
 		ac.MaxNumberOfRetries = options.MaxNumberOfRetries
@@ -63,7 +59,7 @@ func newNativeAbstractClient(options AbstractClientOptions) (nativeAbstractClien
 	}
 
 	if options.Endpoint == "" || options.Port == 0 {
-		return abstractClient{}, errors.New("Endpoint and port are required parameters")
+		return nativeAbstractClient{}, errors.New("Endpoint and port are required parameters")
 	}
 
 	var sslHeader string
@@ -125,7 +121,7 @@ type PublishRequestOptions struct {
 	UAL      string
 }
 
-func (ac *nativeAbstractClient) publishRequest(options PublishRequestOptions) (*http.Response, error) {
+func (ac *nativeAbstractClient) publishRequest(options PublishRequestOptions) ([]byte, error) {
 	ac.Logger.Debug("Sending node info request")
 
 	form := url.Values{}
@@ -155,7 +151,14 @@ func (ac *nativeAbstractClient) publishRequest(options PublishRequestOptions) (*
 		return nil, errors.New("Could not send publish request form")
 	}
 
-	return resp, nil
+	// convert resp.Body to []byte
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, errors.New("Could not read response body")
+	}
+	resp.Body.Close()
+
+	return b, nil
 }
 
 type ResolveRequestOptions struct {
@@ -457,7 +460,7 @@ type ValidateOptions struct {
 	Nquads []string
 }
 
-func (ac *nativeAbstractClient) Validate(options ValidateOptions) (*http.Response, error) {
+func (ac *nativeAbstractClient) Validate(options ValidateOptions) ([]byte, error) {
 	if len(options.Nquads) == 0 {
 		return nil, errors.New("Please provide assertions and nquads in order to get proofs")
 	}
@@ -485,11 +488,13 @@ func (ac *nativeAbstractClient) Validate(options ValidateOptions) (*http.Respons
 		return nil, errors.New("Could not unmarshal resolve request response")
 	}
 
-	if resolveResponse["status"] == Completed {
-		// TODO Perform validation
-	} else {
+	if resolveResponse["status"] != Completed {
 		return nil, errors.New("Unable to get proofs for given nquads")
 	}
+
+	// TODO Perform validation
+
+	return resp, nil
 
 }
 
@@ -539,7 +544,7 @@ type validatedTriple struct {
 	Valid  bool
 }
 
-func (ac *nativeAbstractClient) performValidation(assertions []byte) []validatedTriple {
+func (ac *nativeAbstractClient) performValidation(assertions []byte) ([]validatedTriple, error) {
 	validationResult := make([]validatedTriple, 0)
 
 	var out AssertionType
@@ -549,7 +554,10 @@ func (ac *nativeAbstractClient) performValidation(assertions []byte) []validated
 	}
 
 	for _, assertion := range out {
-		rootHash := ac.fetchRootHash(assertion.AssertionID)
+		rootHash, err := ac.fetchRootHash(assertion.AssertionID)
+		if err != nil {
+			return nil, err
+		}
 		for _, obj := range assertion.Proofs {
 			v := validatedTriple{obj.Triple, false}
 
@@ -571,7 +579,7 @@ func (ac *nativeAbstractClient) performValidation(assertions []byte) []validated
 		}
 	}
 
-	return validationResult
+	return validationResult, nil
 }
 
 // TODO because of wrong api?
