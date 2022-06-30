@@ -1,9 +1,12 @@
 <script>
+  import { web3, selectedAccount, chainId, defaultEvmStores, makeContractStore } from 'svelte-web3'
+
   import Unauthorized from './unauthorized.svelte'
   import { isAuthenticated } from '$stores/auth' 
 
   import { onMount } from 'svelte'
   import Spinner from './components/spinner.svelte'
+  import Checkbox from './components/checkbox.svelte'
 
   let loadingPayouts = false
   let blockchains
@@ -11,10 +14,40 @@
   let includeActiveJobs = true
   let includeCompletedJobs = true
   let selectedBlockchainID
+  let gasPrice
+
+  let holdingAddress
+  let litigationStorageAddress
+  let holdingStorageAddress
 
   onMount(async () => {
 		blockchains = await getBlockchainsFromAPI()
 	})
+
+  const getHoldingAddressFromAPI = async () => {
+    const request = await fetch(`/api/contracts/getholdingaddresses?blockchainID=${selectedBlockchainID}`)
+    const holdingAddresses = await request.json()
+    const latestHoldingAddress = holdingAddresses.find(holdingAddress => holdingAddress.IsLatest).Address
+    return latestHoldingAddress
+  }
+
+  const getLitigationStorageAddressFromAPI = async () => {
+    const request = await fetch(`/api/contracts/getlitigationstorageaddresses?blockchainID=${selectedBlockchainID}`)
+    const litigationStorageAddresses = await request.json()
+    const latestLitigationStorageAddress = litigationStorageAddresses.find(litigationAddress => litigationAddress.IsLatest).Address
+    return latestLitigationStorageAddress
+  }
+
+  const getHoldingStorageAddressFromAPI = async () => {
+    const request = await fetch(`/api/contracts/getholdingstorageaddresses?blockchainID=${selectedBlockchainID}`)
+    const holdingStorageAddresses = await request.json()
+    const latestHoldingStorageAddress = holdingStorageAddresses.find(holdingStorageAddress => holdingStorageAddress.IsLatest).Address
+    return latestHoldingStorageAddress
+  }
+
+  const connectToMetamask = () => {
+    defaultEvmStores.setProvider()
+  }
 
   const getBlockchainsFromAPI = async () => {
     const request = await fetch(`/api/blockchain/GetBlockchains`)
@@ -25,6 +58,9 @@
   const handleBlockchainSelection = async () => {
     loadingPayouts = true
     payouts = await getPayoutsFromAPI()
+    holdingAddress = await getHoldingAddressFromAPI()
+    litigationStorageAddress = await getLitigationStorageAddressFromAPI()
+    holdingStorageAddress = await getHoldingStorageAddressFromAPI()
     loadingPayouts = false
   }
 
@@ -33,6 +69,73 @@
     const payouts = await request.json()
     return payouts
   }
+
+  const verifySelectedPayouts = async () => {
+    const selectedPayouts = payouts.filter(payout => payout.selected)
+    for (let selectedPayout of selectedPayouts) {
+      const verification = await verifySelectedPayout(selectedPayout)
+      payouts = payouts.map(payout => {
+        return {
+          ...payout,
+          ...(payout.OfferID === selectedPayout.OfferID) && { verified: verification.CanTryPayout }
+        }
+      })
+    }
+  }
+
+  const verifySelectedPayout = async (selectedPayout) => {
+    const { NodeID, OfferID, Identity } = selectedPayout
+    const request = await fetch(`/api/nodes/dataholder/cantrypayout?nodeID=${NodeID}&offerId=${OfferID}&holdingAddress=${holdingAddress}&holdingStorageAddress=${holdingStorageAddress}&litigationStorageAddress=${litigationStorageAddress}&identity=${Identity}&blockchainID=${selectedBlockchainID}&selectedAddress=${$selectedAccount}`)
+    const verification = await request.json()
+    return verification
+  }
+
+  const handleCheckAll = (event) => {
+    const { checked: allPayoutsSelectedStatus } = event.target
+    payouts = payouts.map(payout => {
+      return {
+        ...payout,
+        selected: allPayoutsSelectedStatus
+      }
+    })
+  }
+
+  const sendPayouts = async () => {
+    const selectedPayouts = payouts.filter(payout => payout.selected)
+    for (let selectedPayout of selectedPayouts) {
+      await sendPayoutByIdentityAndOfferID(selectedPayout)
+    }
+  }
+
+  const sendPayoutByIdentityAndOfferID = async ({ Identity, OfferID }) => {
+    const contractInfo = [{
+      constant: false,
+      inputs: [
+          {
+            name: "identity",
+            type: "address"
+          },
+          {
+            name: "offerId",
+            type: "uint256"
+          }
+      ],
+      name: "payOut",
+      outputs: [],
+      payable: false,
+      stateMutability: "nonpayable",
+      type: "function"
+    }]
+    const contractInstance = new $web3.eth.Contract(contractInfo, holdingAddress)
+    const builder = contractInstance.methods.payOut(Identity, OfferID)
+    const response = await builder.send({
+      from: $web3.currentProvider.selectedAddress, value: 0, gas: 300000,
+      to: holdingAddress,
+      gasPrice: $web3.utils.toHex($web3.utils.toWei(gasPrice, 'gwei'))
+    })
+    console.log(response)
+  }
+
 </script>
 
 {#if $isAuthenticated === undefined}
@@ -66,87 +169,109 @@
               <option value={blockchain.ID}>{blockchain.BlockchainName}</option>
             {/each}
           </select>
-          <div class="flex items-center">
-            <input bind:checked={includeActiveJobs} on:change="{handleBlockchainSelection}" id="activeJobsCheckbox" type="checkbox" value="" class="w-4 h-4 text-blue-600 bg-gray-100 rounded border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
-            <label for="activeJobsCheckbox" class="ml-2 text-sm text-gray-500 dark:text-gray-400 dark:bg-gray-800">Active jobs</label>
-          </div>
-          <div class="flex items-center">
-            <input bind:checked={includeCompletedJobs} on:change="{handleBlockchainSelection}" id="completedJobsCheckbox" type="checkbox" value="" class="w-4 h-4 text-blue-600 bg-gray-100 rounded border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
-            <label for="completedJobsCheckbox" class="ml-2 text-sm text-gray-500 dark:text-gray-400 dark:bg-gray-800">Completed jobs</label>
-          </div>
+          
+          <Checkbox bind:checked={includeActiveJobs} on:change={handleBlockchainSelection}>Active jobs</Checkbox>
+          <Checkbox bind:checked={includeCompletedJobs} on:change={handleBlockchainSelection}>Completed jobs</Checkbox>
+
         </div>
       </div>
 
       <div class="w-full dark:bg-gray-800 dark:border-gray-700 px-6 py-6">
-        <h4 class="mb-4 text-lg font-semibold text-gray-600 dark:text-gray-300">Payouts</h4>
+        
+        <div class="flex justify-between items-center">
+          <h4 class="text-lg font-semibold text-gray-600 dark:text-gray-300">Payouts</h4>
+          {#if !$selectedAccount}
+            <button on:click={connectToMetamask} type="button" class="focus:outline-none text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-900">Connect to MetaMask</button>      
+          {:else}
+            <div class="flex gap-4 items-center">
+              <div class="text-sm text-gray-500 dark:text-gray-400 dark:bg-gray-800"><span class="font-semibold">Selected account:</span> {$selectedAccount}</div>
+              <div class="text-sm text-gray-500 dark:text-gray-400 dark:bg-gray-800"><span class="font-semibold">Network ID:</span> {$chainId}</div>
+              {#if !payouts.find(payout => payout.selected)}
+              <div class="text-sm text-gray-500 dark:text-gray-400 dark:bg-gray-800">⚠️ There are no selected payouts.</div>      
+              {:else}
+                {#if payouts.find(payout => payout.selected && payout.verified === undefined)}
+                  <button on:click={verifySelectedPayouts} type="button" class="focus:outline-none text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-900">Verify selected payouts</button>   
+                {/if}
+                {#if payouts.find(payout => payout.selected && payout.verified !== undefined)}
+                  <input type="text" bind:value={gasPrice} class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-40 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Gas price">
+                  <button on:click={sendPayouts} type="button" class="focus:outline-none text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-900">Pay out</button>   
+                {/if}
+
+                
+
+              {/if}
+            </div>
+          {/if}
+        </div>
+
       
-        <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
-          <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-              <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-                <tr>
-                  <th scope="col" class="p-4">
-                    <div class="flex items-center">
-                      <input id="checkbox-all" type="checkbox" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
-                      <label for="checkbox-all" class="sr-only">checkbox</label>
-                    </div>
-                  </th>
-                  <th scope="col" class="p-4 pl-0">Offer ID</th>
-                  <th scope="col" class="p-4 pl-0">Paid out</th>
-                  <th scope="col" class="p-4 pl-0">Total reward</th>
-                  <th scope="col" class="p-4 pl-0">Estimated payout</th>
-                  <th scope="col" class="p-4 pl-0 whitespace-nowrap">Last payout</th>
+        <div class="mt-4 overflow-x-auto shadow-md sm:rounded-lg">
+          {#if !selectedBlockchainID}
+            <div class="p-4 text-sm text-gray-700 bg-gray-100 rounded-lg dark:bg-gray-700 dark:text-gray-300" role="alert">
+              <span class="font-medium">⚠️ Please, select your blockchain</span>
+            </div>
+          {:else}
+          <table class="text-sm text-left text-gray-500 dark:text-gray-400" style="table-layout:fixed;">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+              <tr>
+                <th scope="col" class="p-4"><Checkbox on:change={handleCheckAll} /></th>
+                <th scope="col" class="p-4 pl-0">Offer ID</th>
+                <th scope="col" class="p-4 pl-0">Paid out</th>
+                <th scope="col" class="p-4 pl-0">Total reward</th>
+                <th scope="col" class="p-4 pl-0">Estimated payout</th>
+                <th scope="col" class="p-4 pl-0 whitespace-nowrap">Last payout</th>
+                <th scope="col" class="p-4 pl-0 whitespace-nowrap">Verified</th>
+              </tr>
+            </thead>
+            {#if !selectedBlockchainID || loadingPayouts || !payouts.length}
+              <tbody>
+                <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                  <td colspan="7" class="w-4 p-4"> 
+                    {#if loadingPayouts}<Spinner />
+                    {:else if !payouts.length}⚠️ No payouts were found within the selected blockchain
+                    {/if}
+                  </td>
                 </tr>
-              </thead>
-              {#if !selectedBlockchainID || loadingPayouts || !payouts.length}
-                <tbody>
+              </tbody>
+            {:else}
+              <tbody>
+                {#each payouts as payout, i}
                   <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                    <td colspan="6" class="w-4 p-4">
-                      {#if !selectedBlockchainID}⚠️ Please, select your blockchain
-                      {:else if loadingPayouts}<Spinner />
-                      {:else if !payouts.length}⚠️ No payouts were found within the selected blockchain
+                    <td class="w-4 p-4">
+                      <Checkbox bind:checked={payout.selected} />
+                    </td>
+                    <td scope="row" class="p-4 pl-0 text-sm w-10 truncate">
+                      <span title="{payout.OfferID}">{payout.OfferID.substring(0, 10)}…</span>
+                    </td>
+                    <td class="p-4 pl-0 text-sm whitespace-nowrap">
+                      <span>{payout.PaidAmount.toFixed(16)}</span>
+                      <span class="bg-gray-100 text-gray-800 text-xs font-medium ml-1 px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300">TRAC</span>
+                    </td>
+                    <td class="p-4 pl-0 text-sm whitespace-nowrap">
+                      <span>{payout.TokenAmount.toFixed(16)}</span>
+                      <span class="bg-gray-100 text-gray-800 text-xs font-medium ml-1 px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300">TRAC</span>
+                    </td>
+                    <td class="p-4 pl-0 text-sm whitespace-nowrap">
+                      <span>{payout.EstimatedPayout.toFixed(16)}</span>
+                      <span class="bg-gray-100 text-gray-800 text-xs font-medium ml-1 px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300">TRAC</span>
+                    </td>
+                    <td class="p-4 pl-0 text-sm whitespace-nowrap">{new Date(payout.LastPayout).toLocaleString('en-GB', { dateStyle: 'short' })}</td>
+
+                    <td class="p-4 pl-0 text-sm whitespace-nowrap">
+                      {#if payout.verified === undefined} 
+                        <span class="bg-gray-100 text-gray-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300">Unverified</span>
+                      {:else if payout.verified} 
+                        <span class="bg-green-100 text-green-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-green-200 dark:text-green-900">Verified</span>
+                      {:else}
+                        <span class="bg-red-100 text-red-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-red-200 dark:text-red-900">Failed</span>
                       {/if}
                     </td>
                   </tr>
-                </tbody>
-              {:else}
-                <tbody>
-                  {#each payouts as payout}
-                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                      <td class="w-4 p-4">
-                        <div class="flex items-center">
-                          <input id="checkbox-table-1" type="checkbox" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
-                          <label for="checkbox-table-1" class="sr-only">checkbox</label>
-                        </div>
-                      </td>
-                      <td scope="row" class="p-4 pl-0 text-sm whitespace-nowrap">{payout.OfferID}
-                      </td>
-                      <td class="p-4 pl-0 text-sm whitespace-nowrap">
-                        <span>{payout.PaidAmount.toFixed(16)}</span>
-                        <span class="bg-gray-100 text-gray-800 text-xs font-medium ml-1 px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300">TRAC</span>
-                      </td>
-                      <td class="p-4 pl-0 text-sm whitespace-nowrap">
-                        <span>{payout.TokenAmount.toFixed(16)}</span>
-                        <span class="bg-gray-100 text-gray-800 text-xs font-medium ml-1 px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300">TRAC</span>
-                      </td>
-                      <td class="p-4 pl-0 text-sm whitespace-nowrap">
-                        <span>{payout.EstimatedPayout.toFixed(16)}</span>
-                        <span class="bg-gray-100 text-gray-800 text-xs font-medium ml-1 px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300">TRAC</span>
-                      </td>
-                      <td class="p-4 pl-0 text-sm whitespace-nowrap">{new Date(payout.LastPayout).toLocaleString('en-GB', { dateStyle: 'short' })}</td>
-                    </tr>
-                  {/each}
-                </tbody>
-              {/if}
-          </table>
-      </div>
+                {/each}
+              </tbody>
+            {/if}
+        </table>
+      {/if}
     </div>
-
-    <div class="w-full dark:bg-gray-800 dark:border-gray-700 px-6 py-6">
-      <h4 class="mb-4 text-lg font-semibold text-gray-600 dark:text-gray-300">Process Payouts via MetaMask</h4>
-      <div class="p-4 text-sm text-gray-700 bg-gray-100 rounded-lg dark:bg-gray-700 dark:text-gray-300" role="alert">
-        You have the wrong network selected in MetaMask. You need 100 to be selected. See <a href="https://chainid.network/" target="_blank" class="underline">here</a> to translate the network ID numbers into something more useful.
-      </div>
-    </div>
-
   </main>
 {/if}
