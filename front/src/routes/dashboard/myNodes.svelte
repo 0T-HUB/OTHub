@@ -228,7 +228,7 @@
             <div class="flex h-96 w-full items-center justify-center">
               <span class="text-gray-600">⚠️ There was an error fetching this data from the API</span>
             </div>
-          {:else if nodeStats.length}
+          {:else if nodeStats.TotalJobs.length}
             <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
               <tbody>
                 <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
