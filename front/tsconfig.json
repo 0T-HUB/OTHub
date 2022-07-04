@@ -31,6 +31,7 @@
       "$icon/*": ["node_modules/svelte-bootstrap-icons/lib/*"]
     }
   },
+  "extends": "./.svelte-kit/tsconfig.json",
   "include": [
     "Front/src/**/*.d.ts",
     "Front/src/**/*.js",

@@ -165,6 +165,12 @@ module.exports = {
       },
     },
     extend: {
+      width: {
+        '80': '20rem',
+        '112': '28rem',
+        '128': '32rem',
+        '144': '36rem',
+      },
       screens: {
         print: { raw: 'print' },
       },
@@ -174,6 +180,15 @@ module.exports = {
       },
       fontFamily: {
         sans: ['Inter', 'Montserrat', ...defaultTheme.fontFamily.sans],
+      },
+      keyframes: {
+        appear: {
+          '0%': { transform: 'translateY(48px)', opacity: 0 },
+          '100%': { transform: 'translateY(0px)', opacity: 1 },
+        },
+      },
+      animation: {
+        'appear': 'appear .2s linear',
       },
     },
   },

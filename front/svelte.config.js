@@ -25,6 +25,8 @@ const config = {
       resolve: {
         alias: {
           $src: resolve('./src'),
+          $modules: resolve('./src/modules'),
+          $components: resolve('./src/components'),
           $lib: resolve('./src/lib'),
           $stores: resolve('./src/stores'),
           $assets: resolve('./src/assets'),
