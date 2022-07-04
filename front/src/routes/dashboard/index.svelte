@@ -1,8 +1,10 @@
 <script>
   import { onMount } from 'svelte'
-  import Chart from 'chart.js/auto'
-
+  import Chart from 'chart.js/auto/auto.js'
+  import Badge from './components/badge.svelte'
   import Spinner from './components/spinner.svelte'
+
+  import * as API from '$modules/api.module'
   
   let badge
   let dashboardData
@@ -17,7 +19,6 @@
   onMount(async () => {
     gaugeContext = gaugeCanvas.getContext('2d')
     lineChartContext = lineChartCanvas.getContext('2d')
-    getAndSetBadge()
     getAndSetDashboardData()
     await getAndSetBlockchainDistribution()
     drawMeter()
@@ -84,46 +85,21 @@
     })
   }
 
-  const getAndSetJobs =  async () => jobs = await getJobs()
-  const getAndSetBadge = async () => badge = await getBadge()
-  const getAndSetDashboardData = async () => dashboardData = await getDashboardData()
-  const getAndSetBlockchainDistribution = async () => blockchainDistribution = await getBlockchainDistribution()
-
-  const getJobs = async () => {
-    const request = await fetch(`/api/home/JobsChartDataV3`)
-    const jobs = await request.json()
-    return jobs
+  const getAndSetJobs =  async () => {
+    const jobsRequest = await API.getJobs()
+    jobs = jobsRequest.data
   }
 
-  const getBlockchainDistribution = async () => {
-    const request = await fetch(`/api/home/24HJobBlockchainDistribution`)
-    const blockchainDistribution = await request.json()
-    return blockchainDistribution
+
+  const getAndSetDashboardData = async () => {
+    const dashboardDataRequest = await API.getDashboardData()
+    dashboardData = dashboardDataRequest.data
   }
 
-  const getDashboardData = async () => {
-    const request = await fetch(`/api/home/HomeV3?excludeBreakdown=true`)
-    const dashboardData = await request.json()
-    return dashboardData
+  const getAndSetBlockchainDistribution = async () => {
+    const blockchainDistributionRequest = await API.getBlockchainDistribution()
+    blockchainDistribution = blockchainDistributionRequest.data
   }
-
-  const getBadge = async () => {
-    const currentTimestamp = getCurrentTimestamp()
-    const request = await fetch(`/api/badge?${currentTimestamp}`)
-    const badge = await request.json()
-    return badge
-  }
-
-  const getCurrentTimestamp = () => {
-    const currentDate = new Date()
-    const currentTimestamp = currentDate.getTime()
-    return currentTimestamp
-  }
-
-  const deleteAlertByIndex = (alertIndexToBeDeleted) => {
-    badge.LiveOutages = badge.LiveOutages.filter((alertText, alertIndex) => alertIndex !== alertIndexToBeDeleted)
-  }
-
 </script>
 
 <svelte:head>
@@ -134,18 +110,7 @@
   <div class='container px-6 mx-auto grid'>
 
     <div class="mt-6">
-      {#if badge }
-        {#each badge.LiveOutages as alertText, alertIndex}
-        <div class="flex p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-200 dark:text-red-800" role="alert">
-          <svg class="inline flex-shrink-0 mr-3 w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
-          {alertText}
-          <button type="button" class="ml-auto -mx-1.5 -my-1.5 bg-red-100 text-red-500 rounded-lg focus:ring-2 focus:ring-red-400 p-1.5 hover:bg-red-200 inline-flex h-8 w-8 dark:bg-red-200 dark:text-red-600 dark:hover:bg-red-300" aria-label="Close" on:click={() => deleteAlertByIndex(alertIndex)}>
-            <span class="sr-only">Close</span>
-            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
-          </button>
-        </div>
-        {/each}
-      {/if}
+      <Badge />
     </div>
 
     <h2 class='my-6 text-2xl font-semibold text-gray-700 dark:text-gray-200'>

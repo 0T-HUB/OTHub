@@ -3,9 +3,10 @@
   import { onMount } from 'svelte'
   import Unauthorized from './unauthorized.svelte'
   import { isAuthenticated } from '$stores/auth' 
-  import Chart from 'chart.js/auto'
+  import * as API from '$modules/api.module'
+  import Chart from 'chart.js/auto/auto.js'
+  import Badge from './components/badge.svelte'
 
-  let badge
   let recentJobs
   let jobsPerMonth
   let holdingTime
@@ -14,26 +15,18 @@
   let canvas
   let container
 
-  let accessTokenDoesNotExist = true
-
   onMount(async () => {
     canvas = document.createElement('canvas')
-    const accessToken = getAccessTokenFromCookie()
-    accessTokenDoesNotExist = !Boolean(accessToken)
-    if (accessTokenDoesNotExist) return
-    getAndSetBadge()
-    getAndSetRecentJobs()
-    getAndSetJobsPerMonth()
-    getAndSetNodeStats()
-    await getAndSetHoldingTime()
+    const recentJobsRequest = await API.getRecentJobsByNodeID()
+    recentJobs = recentJobsRequest.data
+    const jobsPerMonthRequest = await API.getJobsPerMonth()
+    jobsPerMonth = jobsPerMonthRequest.data
+    const nodeStatsRequest = await API.getNodeStats()
+    nodeStats = nodeStatsRequest.data
+    const holdingTimeRequest = await API.getHoldingTimeByMonth()
+    holdingTime = holdingTimeRequest.data
     updateHoldingTimeChart()
   })
-
-  const getAndSetBadge = async () => badge = await getBadge()
-  const getAndSetRecentJobs = async () => recentJobs = await getRecentJobsByNodeID()
-  const getAndSetJobsPerMonth = async () => jobsPerMonth = await getJobsPerMonth()
-  const getAndSetNodeStats = async () => nodeStats = await getNodeStats()
-  const getAndSetHoldingTime = async () => holdingTime = await getHoldingTimeByMonth()
 
   const updateHoldingTimeChart = () => {
     const labels = holdingTime.map(timeSpan => (`${timeSpan.HoldingTimeInMonths} months`))
@@ -69,52 +62,6 @@
     container.appendChild(canvas)
   }
 
-  const getHoldingTimeByMonth = async (month='') => {
-    const request = await fetch(`/api/mynodes/GetHoldingTimeByMonth?nodeID=${month}`)
-    const holdingTime = await request.json()
-    return holdingTime
-  }
-
-  const getNodeStats = async () => {
-    const request = await fetch('/api/mynodes/GetNodeStats')
-    const nodeStats = await request.json()
-    return nodeStats
-  }
-
-  const getJobsPerMonth = async () => {
-    const request = await fetch('/api/mynodes/JobsPerMonth')
-    const jobsPerMonth = await request.json()
-    return jobsPerMonth    
-  }
-
-  const getRecentJobsByNodeID = async (nodeId = '') => {
-    const request = await fetch(`/api/mynodes/RecentJobs?nodeID=${nodeId}`)
-    const recentJobs = await request.json()
-    return recentJobs
-  }
-
-  const getBadge = async () => {
-    const currentTimestamp = getCurrentTimestamp()
-    const request = await fetch(`/api/badge?${currentTimestamp}`)
-    const badge = await request.json()
-    return badge
-  }
-
-  const getAccessTokenFromCookie = () => {
-    const cookies = cookie.parse(document.cookie)
-    const { accessToken } = cookies
-    return accessToken
-  }
-
-  const getCurrentTimestamp = () => {
-    const currentDate = new Date()
-    const currentTimestamp = currentDate.getTime()
-    return currentTimestamp
-  }
-
-  const deleteAlertByIndex = (alertIndexToBeDeleted) => {
-    badge.LiveOutages = badge.LiveOutages.filter((alertText, alertIndex) => alertIndex !== alertIndexToBeDeleted)
-  }
 
   const activateTabByRecentJobIndex = (recentJobIndexToBeSetActive) => {
     recentJobs = recentJobs.map((recentJob, recentJobIndex) => {
@@ -144,28 +91,13 @@
       <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/>
     </svg>
   </main>
-{/if}
-
-{#if $isAuthenticated === false || (accessTokenDoesNotExist && $isAuthenticated !== undefined)}
+{:else if $isAuthenticated === false}
   <Unauthorized />
 {/if}
 
-  <main class="h-full pb-16 pt-16 overflow-y-auto" style="{!accessTokenDoesNotExist && $isAuthenticated ? '' : 'display: none;'}">
+  <main class="h-full pb-16 pt-16 overflow-y-auto" style="{$isAuthenticated ? '' : 'display: none;'}">
     <div class="container flex flex-col gap-6 px-6 mx-auto">
-      <div>
-        {#if badge }
-          {#each badge.LiveOutages as alertText, alertIndex}
-          <div class="flex p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-200 dark:text-red-800" role="alert">
-            <svg class="inline flex-shrink-0 mr-3 w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
-            {alertText}
-            <button type="button" class="ml-auto -mx-1.5 -my-1.5 bg-red-100 text-red-500 rounded-lg focus:ring-2 focus:ring-red-400 p-1.5 hover:bg-red-200 inline-flex h-8 w-8 dark:bg-red-200 dark:text-red-600 dark:hover:bg-red-300" aria-label="Close" on:click={() => deleteAlertByIndex(alertIndex)}>
-              <span class="sr-only">Close</span>
-              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
-            </button>
-          </div>
-          {/each}
-        {/if}
-      </div>
+      <Badge />
       
       <h2 class="my-6 text-2xl font-semibold text-gray-700 dark:text-gray-200">My Nodes</h2>
 
@@ -176,15 +108,11 @@
             <div class="h-5 w-5 rounded-full border-2 border-t-purple-500 border-b-purple-500 border-l-purple-500 border-r-gray-600 animate-spin"></div>
             <span class="ml-2 text-gray-600">Loading...</span>
           </div>
-        {/if}
-
-        {#if recentJobs === null}
+        {:else if recentJobs === null}
           <div class="flex h-96 w-full items-center justify-center">
             <span class="text-gray-600">⚠️ There was an error fetching this data from the API</span>
           </div>
-        {/if}
-
-        {#if recentJobs }
+        {:else if recentJobs.length}
           <div class="text-sm font-medium text-center text-gray-500 border-b border-gray-200 dark:text-gray-400 dark:border-gray-700">
             <ul class="flex flex-wrap -mb-px">
               {#each recentJobs as recentJob, recentJobIndex}          
@@ -237,15 +165,11 @@
               <div class="h-5 w-5 rounded-full border-2 border-t-purple-500 border-b-purple-500 border-l-purple-500 border-r-gray-600 animate-spin"></div>
               <span class="ml-2 text-gray-600">Loading...</span>
             </div>
-          {/if}
-
-          {#if jobsPerMonth === null}
+          {:else if jobsPerMonth === null}
             <div class="flex h-96 w-full items-center justify-center">
               <span class="text-gray-600">⚠️ There was an error fetching this data from the API</span>
             </div>
-          {/if}
-          
-          {#if jobsPerMonth }
+          {:else if jobsPerMonth.AllNodes}
             <div class="text-sm font-medium text-center text-gray-500 border-b border-gray-200 dark:text-gray-400 dark:border-gray-700">
               <ul class="flex flex-wrap -mb-px">
                 {#each jobsPerMonth.AllNodes.Years as year, yearIndex }          
@@ -290,8 +214,6 @@
                 </div>
               {/if}
             {/each}
-
-
           {/if}
         </div>
         
@@ -302,15 +224,11 @@
               <div class="h-5 w-5 rounded-full border-2 border-t-purple-500 border-b-purple-500 border-l-purple-500 border-r-gray-600 animate-spin"></div>
               <span class="ml-2 text-gray-600">Loading...</span>
             </div>
-          {/if}
-
-          {#if nodeStats === null}
+          {:else if nodeStats === null}
             <div class="flex h-96 w-full items-center justify-center">
               <span class="text-gray-600">⚠️ There was an error fetching this data from the API</span>
             </div>
-          {/if}
-
-          {#if nodeStats}
+          {:else if nodeStats.length}
             <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
               <tbody>
                 <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">

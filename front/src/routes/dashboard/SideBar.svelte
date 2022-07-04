@@ -1,7 +1,36 @@
 <script lang="ts">
+  import { onMount } from 'svelte'
+  import * as API from '$modules/api.module'
+  import { badge } from '$stores/badge'
+
   import { closeSideMenu, pageMenus, togglePageMenu } from '$stores/menus'
   import { page } from '$app/stores'
   import { goto } from '$app/navigation'
+
+  onMount(async() => {
+    const badgeRequest = await API.getBadge()
+    $badge = badgeRequest.data
+  })
+
+  $: $badge, updateLinkCounts()
+
+  const updateLinkCounts = () => {
+    links = links.map(link => {
+      return {
+        ...link,
+        ...(link.name === 'Jobs') && { count: $badge.TotalJobs },
+        ...(link.name === 'All Nodes') && { 
+          sublinks: link.sublinks.map(sublink => {
+            return {
+              ...sublink,
+            ...(sublink.name === 'Data holders') && { count: $badge.DataHolders },
+            ...(sublink.name === 'Data creators') && { count: $badge.DataCreators }
+            }
+          })
+        }
+      }
+    })
+  }
 
   const changeUrl = (url: string) => {
     closeSideMenu()
@@ -33,6 +62,7 @@
       svg: [
         'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01',
       ],
+      count: undefined
     },
     {
       name: 'All Nodes',
@@ -42,8 +72,8 @@
         'M30.2 42V35.75H22.5V15.25H17.85V21.75H4V6H17.85V12.25H30.2V6H44V21.75H30.2V15.25H25.5V32.75H30.2V26.25H44V42ZM7 9V18.75ZM33.2 29.25V39ZM33.2 9V18.75ZM33.2 18.75H41V9H33.2ZM33.2 39H41V29.25H33.2ZM7 18.75H14.85V9H7Z',
       ],
       sublinks: [
-        { name: 'Data holders', url: '/dataHolders' },
-        { name: 'Data creators', url: '/dataCreators' },
+        { name: 'Data holders', count: undefined, url: '/dataHolders' },
+        { name: 'Data creators', count: undefined, url: '/dataCreators' },
       ],
     },
     {
@@ -73,37 +103,7 @@
         { name: 'Job Heatmap', url: '/heatMap' },
         { name: 'Staked tokens', url: '/stakedTokens' },
       ],
-    },
-    {
-      name: 'Tools',
-      h: 48,
-      w: 48,
-      svg: [
-        'M9 42Q7.8 42 6.9 41.1Q6 40.2 6 39V9Q6 7.8 6.9 6.9Q7.8 6 9 6H39Q40.2 6 41.1 6.9Q42 7.8 42 9V39Q42 40.2 41.1 41.1Q40.2 42 39 42ZM9 39H39Q39 39 39 39Q39 39 39 39V9Q39 9 39 9Q39 9 39 9H9Q9 9 9 9Q9 9 9 9V39Q9 39 9 39Q9 39 9 39ZM22.6 33.7H25.4L25.9 31Q26.9 30.7 27.6 30.25Q28.3 29.8 28.9 29.2L32 30.15L33.3 27.45L30.95 25.95Q31.15 24.9 31.15 24Q31.15 23.1 30.95 22.05L33.3 20.55L32 17.85L28.9 18.8Q28.3 18.2 27.6 17.75Q26.9 17.3 25.9 17L25.4 14.3H22.6L22.1 17Q21.1 17.3 20.4 17.75Q19.7 18.2 19.1 18.8L16 17.85L14.7 20.55L17.05 22.05Q16.85 23.1 16.85 24Q16.85 24.9 17.05 25.95L14.7 27.45L16 30.15L19.1 29.2Q19.7 29.8 20.4 30.25Q21.1 30.7 22.1 31ZM24 28.25Q22.2 28.25 20.975 27.025Q19.75 25.8 19.75 24Q19.75 22.2 20.975 20.975Q22.2 19.75 24 19.75Q25.8 19.75 27.025 20.975Q28.25 22.2 28.25 24Q28.25 25.8 27.025 27.025Q25.8 28.25 24 28.25ZM9 39Q9 39 9 39Q9 39 9 39V9Q9 9 9 9Q9 9 9 9Q9 9 9 9Q9 9 9 9V39Q9 39 9 39Q9 39 9 39Z',
-      ],
-      sublinks: [{ name: 'Find Nodes by Wallet', url: '/findNodes' }],
-    },
-    {
-      name: 'Global activity',
-      url: '/globalActivity',
-      h: 48,
-      w: 48,
-      svg: [
-        'M8 38V14L24 2L40 14V22.5H37V15.5L24 5.75L11 15.5V35H24.5V38ZM37 42.8 34.6 37.4 29.2 35 34.6 32.6 37 27.2 39.4 32.6 44.8 35 39.4 37.4Z',
-      ],
-    },
-    {
-      name: 'Account',
-      h: '48',
-      w: '48',
-      svg: [
-        'M20 23.75Q16.7 23.75 14.6 21.65Q12.5 19.55 12.5 16.25Q12.5 12.95 14.6 10.85Q16.7 8.75 20 8.75Q23.3 8.75 25.4 10.85Q27.5 12.95 27.5 16.25Q27.5 19.55 25.4 21.65Q23.3 23.75 20 23.75ZM4 39.8V35.1Q4 33.35 4.875 31.95Q5.75 30.55 7.4 29.8Q11 28.2 14.075 27.5Q17.15 26.8 20 26.8Q20.25 26.8 20.575 26.8Q20.9 26.8 21.15 26.8Q20.85 27.5 20.7 28.175Q20.55 28.85 20.45 29.8H20Q17.1 29.8 14.325 30.425Q11.55 31.05 8.6 32.5Q7.8 32.9 7.4 33.625Q7 34.35 7 35.1V36.8H20.45Q20.7 37.7 21.05 38.425Q21.4 39.15 21.9 39.8ZM33.35 42 32.85 38.7Q32 38.45 31.125 37.975Q30.25 37.5 29.65 36.9L26.9 37.5L25.65 35.4L28 33.2Q27.9 32.75 27.9 31.95Q27.9 31.15 28 30.7L25.65 28.5L26.9 26.4L29.65 27Q30.25 26.4 31.125 25.925Q32 25.45 32.85 25.2L33.35 21.9H36.05L36.55 25.2Q37.4 25.45 38.275 25.925Q39.15 26.4 39.75 27L42.5 26.4L43.75 28.5L41.4 30.7Q41.5 31.15 41.5 31.95Q41.5 32.75 41.4 33.2L43.75 35.4L42.5 37.5L39.75 36.9Q39.15 37.5 38.275 37.975Q37.4 38.45 36.55 38.7L36.05 42ZM34.7 35.95Q36.5 35.95 37.6 34.85Q38.7 33.75 38.7 31.95Q38.7 30.15 37.6 29.05Q36.5 27.95 34.7 27.95Q32.9 27.95 31.8 29.05Q30.7 30.15 30.7 31.95Q30.7 33.75 31.8 34.85Q32.9 35.95 34.7 35.95ZM20 20.75Q21.95 20.75 23.225 19.475Q24.5 18.2 24.5 16.25Q24.5 14.3 23.225 13.025Q21.95 11.75 20 11.75Q18.05 11.75 16.775 13.025Q15.5 14.3 15.5 16.25Q15.5 18.2 16.775 19.475Q18.05 20.75 20 20.75ZM20 16.25Q20 16.25 20 16.25Q20 16.25 20 16.25Q20 16.25 20 16.25Q20 16.25 20 16.25Q20 16.25 20 16.25Q20 16.25 20 16.25Q20 16.25 20 16.25Q20 16.25 20 16.25ZM20.45 36.8Q20.45 36.8 20.45 36.8Q20.45 36.8 20.45 36.8Q20.45 36.8 20.45 36.8Q20.45 36.8 20.45 36.8Q20.45 36.8 20.45 36.8Q20.45 36.8 20.45 36.8Z',
-      ],
-      sublinks: [
-        { name: 'Login', url: '/pages/login' },
-        { name: 'Register', url: '/pages/create-account' },
-      ],
-    },
+    }
   ]
 </script>
 
@@ -125,7 +125,7 @@
 
         {#if !link.sublinks}
           <a
-            class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200"
+            class="inline-flex gap-4 items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200"
             class:text-gray-800={activeMenu == link.url}
             class:dark:text-gray-100={activeMenu == link.url}
             href={link.url}
@@ -150,7 +150,15 @@
                 {/each}
               </svg>
             {/if}
-            <span class="ml-4">{link.name}</span>
+            <div class="flex gap-2">
+              <span>{link.name}</span>
+              {#if 'count' in link && link.count === undefined} 
+                <span class="bg-gray-100 text-gray-800 text-xs mr-2 px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-500 animate-pulse">Loading…</span>
+              {:else if link.count}
+                <span class="bg-purple-100 text-purple-800 text-xs mr-2 px-2.5 py-0.5 rounded dark:bg-purple-200 dark:text-purple-900">{link.count}</span>
+              {/if}
+            </div>
+            
           </a>
         {:else}
           <button
@@ -192,7 +200,17 @@
                 <li
                   class="px-2 py-1 transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200"
                 >
-                  <a class="w-full" href={sublink.url}>{sublink.name}</a>
+                  
+                  <div class="flex gap-2">
+                    <a href={sublink.url}>{sublink.name}</a>
+                    {#if 'count' in sublink && sublink.count === undefined} 
+                      <span class="bg-gray-100 text-gray-800 text-xs px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-500 animate-pulse">Loading…</span>
+                    {:else if sublink.count}
+                      <span class="bg-purple-100 text-purple-800 text-xs px-2.5 py-0.5 rounded dark:bg-purple-200 dark:text-purple-900">{sublink.count}</span>
+                    {/if}
+                  </div>
+
+
                 </li>
               {/each}
             </ul>

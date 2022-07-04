@@ -11,6 +11,11 @@
     closeNotificationsMenu,
     closeProfileMenu,
   } from '$stores/menus'
+
+  import { notifications } from '$stores/notifications'
+
+  import * as Notifications from '$modules/notifications.module'
+
   import { isAuthenticated, user } from '$stores/auth'  
   import { clickOutside } from '$lib/ioevents/click'
   import { keydownEscape } from '$lib/ioevents/keydown'
@@ -18,28 +23,57 @@
   import auth from '../../authService.js'
 
   let auth0Client
+  let unseenNotification
+
+  const deleteNotification = (notification) => {
+    $notifications = $notifications.filter(currentNotification => currentNotification.timestamp !== notification.timestamp)
+    if (!$notifications?.length) $isNotificationsMenuOpen = false
+    Notifications.updateNotificationsInLocalStorageFromStore()
+  }
+
+  $: $notifications, handleNotificationsUpdate()
+
+  const handleNotificationsUpdate = () => {
+    const notificationsDoNotExist = !Boolean($notifications && $notifications.length)
+    if (notificationsDoNotExist) return
+    unseenNotification = $notifications.find(notification => notification?.unseen)
+    const unseenNotificationDoesNotExist = !Boolean(unseenNotification)
+    if (unseenNotificationDoesNotExist) return
+    $notifications = $notifications.map(notification => {
+      return {
+        ...notification,
+        unseen: false
+      }
+    })
+    setTimeout(() => unseenNotification = undefined, 10000)
+  }
 
   onMount(async () => {
+    Notifications.updateNotificationsInStoreFromLocalStorage()
+    Notifications.generatePendingNotificationIfItDoesNotExist()
     auth0Client = await auth.createClient()
     isAuthenticated.set(await auth0Client.isAuthenticated())
     user.set(await auth0Client.getUser())
-    const accessTokenCookieDoesNotExist = !document.cookie.includes('accessToken')
-    if (accessTokenCookieDoesNotExist) askForToken()
   })
-
-  const askForToken = () => {
-    const accessToken = prompt('Please, enter the access token.')
-    if (accessToken) {
-      document.cookie = `accessToken=${accessToken}; Max-Age=86400`
-      window.location.reload()
-    }
-  }
 
   const withSearch = true
 
   const login = () => auth.loginWithPopup(auth0Client)
   const logout = () => auth.logout(auth0Client)
 </script>
+
+{#if unseenNotification}
+  <div class="animate-appear fixed right-4 bottom-4 flex items-center w-full max-w-xs p-4 text-gray-500 bg-white rounded-lg shadow dark:text-gray-400 dark:bg-gray-800" role="alert">
+    <div class="inline-flex items-center justify-center flex-shrink-0 w-8 h-8 text-blue-500 bg-blue-100 rounded-lg dark:bg-blue-800 dark:text-blue-200">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clip-rule="evenodd"></path></svg>
+    </div>
+    <div class="ml-3 text-sm font-normal">{unseenNotification.text}.</div>
+    <button on:click={() => unseenNotification = undefined } type="button" class="ml-auto -mx-1.5 -my-1.5 bg-white text-gray-400 hover:text-gray-900 rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 hover:bg-gray-100 inline-flex h-8 w-8 dark:text-gray-500 dark:hover:text-white dark:bg-gray-800 dark:hover:bg-gray-700" data-dismiss-target="#toast-default" aria-label="Close">
+        <span class="sr-only">Close</span>
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+    </button>
+  </div>
+{/if}
 
 <header class="z-10 py-4 bg-white shadow-md dark:bg-gray-800">
   <div
@@ -117,6 +151,7 @@
             on:keydown-escape={closeNotificationsMenu}
             aria-label="Notifications"
             aria-haspopup="true"
+            disabled={!$notifications?.length ? 'disabled': null }
           >
             <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
               <path
@@ -124,10 +159,9 @@
               />
             </svg>
             <!-- Notification badge -->
-            <span
-              aria-hidden="true"
-              class="absolute top-0 right-0 inline-block w-3 h-3 transform translate-x-1 -translate-y-1 bg-red-600 border-2 border-white rounded-full dark:border-gray-800"
-            />
+            {#if $notifications?.length}
+              <span aria-hidden="true" class="absolute top-0 right-0 inline-block w-3 h-3 transform translate-x-1 -translate-y-1 bg-red-600 border-2 border-white rounded-full dark:border-gray-800" />
+            {/if}
           </button>
           {#if $isNotificationsMenuOpen}
             <ul
@@ -137,19 +171,20 @@
               on:keydown-escape={closeNotificationsMenu}
               class="absolute right-0 w-56 p-2 mt-2 space-y-2 text-gray-600 bg-white border border-gray-100 rounded-md shadow-md dark:text-gray-300 dark:border-gray-700 dark:bg-gray-700"
             >
-              <li class="flex">
-                <a
-                  class="inline-flex items-center justify-between w-full px-2 py-1 text-sm font-semibold transition-colors duration-150 rounded-md hover:bg-gray-100 hover:text-gray-800 dark:hover:bg-gray-800 dark:hover:text-gray-200"
-                  href="/Front/staticstatic"
-                >
-                  <span>Jobs</span>
-                  <span
-                    class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-600 bg-red-100 rounded-full dark:text-red-100 dark:bg-red-600"
-                  >
-                    numberofnewjobshere
+            {#if $notifications?.length}
+              {#each $notifications as notification}
+                <li class="flex grow gap-1">
+                  <span class="text-xs">
+                    {notification.text}
                   </span>
-                </a>
-              </li>
+                  <button on:click={() => deleteNotification(notification)}>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </li>
+              {/each}
+            {/if}
             </ul>
           {/if}
         </li>

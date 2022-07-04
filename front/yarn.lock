@@ -540,6 +540,16 @@ chart.js@^3.5.0, chart.js@^3.8.0:
   resolved "https://registry.yarnpkg.com/chart.js/-/chart.js-3.8.0.tgz#c6c14c457b9dc3ce7f1514a59e9b262afd6f1a94"
   integrity sha512-cr8xhrXjLIXVLOBZPkBZVF6NDeiVIrPLHcMhnON7UufudL+CNeRrD+wpYanswlm8NpudMdrt3CHoLMQMxJhHRg==
 
+chartjs-chart-matrix@^1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/chartjs-chart-matrix/-/chartjs-chart-matrix-1.1.1.tgz#cf8b8f664ad9d3df894943c1f40c31f67219d291"
+  integrity sha512-0ZNP2Jib4GD/V8BOV1H5myB4RCmdmb3KJ8M9unhCByxojKpAiB70Z/AEc/Uy2Y01bTGLArToqzYpzBMYhDh0uw==
+
+chartjs@^0.3.24:
+  version "0.3.24"
+  resolved "https://registry.yarnpkg.com/chartjs/-/chartjs-0.3.24.tgz#3addeb5ae3606b3e89e346c27d52ca158416e93d"
+  integrity sha512-h6G9qcDqmFYnSWqjWCzQMeOLiypS+pM6Fq2Rj7LPty8Kjx5yHonwwJ7oEHImZpQ2u9Pu36XGYfardvvBiQVrhg==
+
 chokidar@^3.4.1, chokidar@^3.5.1, chokidar@^3.5.3:
   version "3.5.3"
   resolved "https://registry.yarnpkg.com/chokidar/-/chokidar-3.5.3.tgz#1cf37c8707b932bd1af1ae22c0432e2acd1903bd"

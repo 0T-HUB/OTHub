@@ -17,18 +17,21 @@
   })
 
   const changePriceCalculationMode = async () => {
-    await fetch(`/api/mynodes/UpdateMyNodesPriceCalculationMode?mode=${priceCalculationMode}`, { method: 'POST' })
+    const priceCalculationRequest = await fetch(`/api/mynodes/UpdateMyNodesPriceCalculationMode?mode=${priceCalculationMode}`, { method: 'POST' })
+    return priceCalculationRequest.data
   }
 
   const getPriceCalculationModeFromAPI = async () => {
     const request = await fetch(`/api/mynodes/MyNodesPriceCalculationMode`)
-    const priceCalculationMode = await request.json()
+    const priceCalculationModeRequest = await request.json()
+    const priceCalculationMode = priceCalculationModeRequest.data
     return priceCalculationMode
   }
 
   const getDataHoldersFromAPI = async () => {
-    const request = await fetch(`/api/nodes/dataholders?ercVersion=1&restrictToMyNodes=true&_sort=DisplayName&_order=ASC&_page=1&_limit=9999`)
-    let dataHolders = await request.json()
+    const dataHoldersRequest = await (await fetch(`/api/nodes/dataholders?ercVersion=1&restrictToMyNodes=true&_sort=DisplayName&_order=ASC&_page=1&_limit=9999`)).json()
+    console.log(dataHoldersRequest)
+    let dataHolders = dataHoldersRequest?.data || []
     dataHolders = dataHolders.map(dataHolder => {
       return {
         ...dataHolder,
@@ -80,10 +83,6 @@
     dataHolders = await getDataHoldersFromAPI()
   }
 
-  const changeNodesPriceCalculationMode = async () => {
-
-  }
-
 </script>
 
 <svelte:head>
@@ -124,28 +123,28 @@
               <tr
                 class="text-xs font-semibold tracking-wide text-left text-gray-500 uppercase border-b dark:border-gray-700 bg-gray-50 dark:text-gray-400 dark:bg-gray-800"
               >
-                <th class="px-4 py-3">Actions</th>
-                <th class="px-4 py-3">Node id</th>
-                <th class="px-4 py-3">Name</th>
-                <th class="px-4 py-3">Jobs</th>
-                <th class="px-4 py-3 whitespace-nowrap">Jobs (one week)</th>
-                <th class="px-4 py-3 whitespace-nowrap">Active jobs</th>
-                <th class="px-4 py-3">Staked tockens</th>
-                <th class="px-4 py-3">Locked tockens</th>
-                <th class="px-4 py-3">Paidout tockens</th>
+                <th class="px-2 py-2 text-xs">Actions</th>
+                <th class="px-2 py-2 text-xs">Node id</th>
+                <th class="px-2 py-2 text-xs">Name</th>
+                <th class="px-2 py-2 text-xs">Jobs</th>
+                <th class="px-2 py-2 text-xs whitespace-nowrap">Jobs (one week)</th>
+                <th class="px-2 py-2 text-xs whitespace-nowrap">Active jobs</th>
+                <th class="px-2 py-2 text-xs">Staked tockens</th>
+                <th class="px-2 py-2 text-xs">Locked tockens</th>
+                <th class="px-2 py-2 text-xs">Paidout tockens</th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y dark:divide-gray-700 dark:bg-gray-800">
               {#if !dataHolders.length && !nodeIsBeingAdded}
                 <tr class="text-gray-700 dark:text-gray-400">
-                  <td class="px-4 py-3 text-sm" colspan="9">⚠️ You have no nodes</td>
+                  <td class="px-2 py-2 text-sm" colspan="9">⚠️ You have no nodes</td>
                 </tr>
               {/if}
 
               {#if nodeIsBeingAdded}
                 <tr class="text-gray-700 dark:text-gray-400">
-                  <td class="px-4 py-3">
-                    <div class="flex items-center space-x-4 text-sm">
+                  <td class="px-2 py-2">
+                    <div class="flex items-center space-x-1">
                       <button on:click={() => saveOrUpdateNode(nodeThatIsBeingAdded)} class="flex items-center justify-between px-2 py-2 text-sm font-medium leading-5 text-purple-600 rounded-lg dark:text-gray-400 focus:outline-none focus:shadow-outline-gray" aria-label="Edit">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                           <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
@@ -158,11 +157,11 @@
                       </button>
                     </div>
                   </td>
-                  <td class="px-4 py-3 text-sm">
-                    <input bind:value={nodeThatIsBeingAdded.NodeId} class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 read-only:text-gray-500" placeholder="Node ID">
+                  <td class="px-2 py-2 text-xs">
+                    <input bind:value={nodeThatIsBeingAdded.NodeId} class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 read-only:text-gray-500 text-xs" placeholder="Node ID">
                   </td>
-                  <td class="px-4 py-3 text-sm">
-                    <input bind:value={nodeThatIsBeingAdded.NewDisplayName} class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 read-only:text-gray-500" placeholder="Name">
+                  <td class="px-2 py-2 text-xs">
+                    <input bind:value={nodeThatIsBeingAdded.NewDisplayName} class="bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 read-only:text-gray-500 text-xs w-20" placeholder="Name">
                   </td>
                 </tr>
               {/if}
@@ -170,8 +169,8 @@
 
               {#each dataHolders as dataHolder}
                 <tr class="text-gray-700 dark:text-gray-400">
-                  <td class="px-4 py-3">
-                    <div class="flex items-center space-x-4 text-sm">
+                  <td class="px-2 py-2 text-xs">
+                    <div class="flex items-center space-x-1 text-sm">
                     {#if !dataHolder.beingEdited}
                       <button on:click={() => dataHolder.beingEdited = true} class="flex items-center justify-between px-2 py-2 text-sm font-medium leading-5 text-purple-600 rounded-lg dark:text-gray-400 focus:outline-none focus:shadow-outline-gray" aria-label="Edit">
                         <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
@@ -196,20 +195,20 @@
                       </button>
                     {/if}
                     </div></td>
-                  <td class="px-4 py-3 text-sm" title={dataHolder.NodeId}>{dataHolder.NodeId.substring(0, 8)}...</td>
-                  <td class="px-4 py-3 text-sm whitespace-nowrap">
+                  <td class="px-2 py-2 text-xs" title={dataHolder.NodeId}>{dataHolder.NodeId}</td>
+                  <td class="px-2 py-2 text-xs whitespace-nowrap">
                     {#if !dataHolder.beingEdited} 
                       {dataHolder.DisplayName}
                     {:else}
-                      <input bind:value={dataHolder.NewDisplayName} class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 read-only:text-gray-500" placeholder="Name">
+                      <input bind:value={dataHolder.NewDisplayName} class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 read-only:text-gray-500 text-xs w-20" placeholder="Name">
                     {/if}
                   </td>
-                  <td class="px-4 py-3 text-sm">{dataHolder.TotalWonOffers}</td>
-                  <td class="px-4 py-3 text-sm">{dataHolder.WonOffersLast7Days}</td>
-                  <td class="px-4 py-3 text-sm">{dataHolder.ActiveOffers}</td>
-                  <td class="px-4 py-3 text-sm">{dataHolder.StakeTokens}</td>
-                  <td class="px-4 py-3 text-sm">{dataHolder.StakeReservedTokens}</td>
-                  <td class="px-4 py-3 text-sm">{dataHolder.PaidTokens}</td>
+                  <td class="px-2 py-2 text-xs">{dataHolder.TotalWonOffers}</td>
+                  <td class="px-2 py-2 text-xs">{dataHolder.WonOffersLast7Days}</td>
+                  <td class="px-2 py-2 text-xs">{dataHolder.ActiveOffers}</td>
+                  <td class="px-2 py-2 text-xs">{dataHolder.StakeTokens}</td>
+                  <td class="px-2 py-2 text-xs">{dataHolder.StakeReservedTokens}</td>
+                  <td class="px-2 py-2 text-xs">{dataHolder.PaidTokens}</td>
                 </tr>
               {/each}
             </tbody>

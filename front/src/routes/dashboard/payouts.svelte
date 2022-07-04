@@ -26,21 +26,24 @@
 
   const getHoldingAddressFromAPI = async () => {
     const request = await fetch(`/api/contracts/getholdingaddresses?blockchainID=${selectedBlockchainID}`)
-    const holdingAddresses = await request.json()
+    const holdingAddressesRequest = await request.json()
+    const holdingAddresses = holdingAddressesRequest.data
     const latestHoldingAddress = holdingAddresses.find(holdingAddress => holdingAddress.IsLatest).Address
     return latestHoldingAddress
   }
 
   const getLitigationStorageAddressFromAPI = async () => {
     const request = await fetch(`/api/contracts/getlitigationstorageaddresses?blockchainID=${selectedBlockchainID}`)
-    const litigationStorageAddresses = await request.json()
+    const litigationStorageAddressesRequest = await request.json()
+    const litigationStorageAddresses = litigationStorageAddressesRequest.data
     const latestLitigationStorageAddress = litigationStorageAddresses.find(litigationAddress => litigationAddress.IsLatest).Address
     return latestLitigationStorageAddress
   }
 
   const getHoldingStorageAddressFromAPI = async () => {
     const request = await fetch(`/api/contracts/getholdingstorageaddresses?blockchainID=${selectedBlockchainID}`)
-    const holdingStorageAddresses = await request.json()
+    const holdingStorageAddressesRequest = await request.json()
+    const holdingStorageAddresses = holdingStorageAddressesRequest.data
     const latestHoldingStorageAddress = holdingStorageAddresses.find(holdingStorageAddress => holdingStorageAddress.IsLatest).Address
     return latestHoldingStorageAddress
   }
@@ -51,7 +54,8 @@
 
   const getBlockchainsFromAPI = async () => {
     const request = await fetch(`/api/blockchain/GetBlockchains`)
-    const blockchains = await request.json()
+    const response = await request.json()
+    const blockchains = response.data
     return blockchains
   }
 
@@ -66,7 +70,8 @@
 
   const getPayoutsFromAPI = async () => {
     const request = await fetch(`/api/mynodes/PossibleJobPayouts?includeActiveJobs=${includeActiveJobs}&includeCompletedJobs=${includeCompletedJobs}&blockchainID=${selectedBlockchainID}&dateFrom=null&dateTo=null`)
-    const payouts = await request.json()
+    const respone = await request.json()
+    const payouts = respone.data
     return payouts
   }
 
@@ -83,10 +88,18 @@
     }
   }
 
+  const getNetworkIDByBlockchainID = async (blockchainID) => {
+    const request = await fetch(`/api/blockchain/networkid?blockchainID=${blockchainID}`)
+    const response = await request.json()
+    const networkID = Number(response.data)
+    return networkID
+  }
+
   const verifySelectedPayout = async (selectedPayout) => {
     const { NodeID, OfferID, Identity } = selectedPayout
     const request = await fetch(`/api/nodes/dataholder/cantrypayout?nodeID=${NodeID}&offerId=${OfferID}&holdingAddress=${holdingAddress}&holdingStorageAddress=${holdingStorageAddress}&litigationStorageAddress=${litigationStorageAddress}&identity=${Identity}&blockchainID=${selectedBlockchainID}&selectedAddress=${$selectedAccount}`)
-    const verification = await request.json()
+    const response = await request.json()
+    const verification = response.data
     return verification
   }
 
@@ -101,6 +114,9 @@
   }
 
   const sendPayouts = async () => {
+    const networkID = await getNetworkIDByBlockchainID(selectedBlockchainID)
+    const selectedNetworkIDIsNotEqualToMetaMaskID = networkID !== $chainId
+    if (selectedNetworkIDIsNotEqualToMetaMaskID) return alert('Sselected network ID is not equal to MetaMask Network ID')
     const selectedPayouts = payouts.filter(payout => payout.selected)
     for (let selectedPayout of selectedPayouts) {
       await sendPayoutByIdentityAndOfferID(selectedPayout)
@@ -133,7 +149,6 @@
       to: holdingAddress,
       gasPrice: $web3.utils.toHex($web3.utils.toWei(gasPrice, 'gwei'))
     })
-    console.log(response)
   }
 
 </script>
@@ -153,74 +168,67 @@
 
 {#if $isAuthenticated}
   <main class="flex h-full justify-center pb-16 pt-16">
-    <div class="container flex flex-col gap-6 px-6 mx-auto">
-      
+    <div class="container grid px-6 mx-auto gap-4">
       <div class="w-full dark:bg-gray-800 dark:border-gray-700 px-6 py-6">
         <h4 class="mb-4 text-lg font-semibold text-gray-600 dark:text-gray-300">How to use this page?</h4>
         <p class="text-sm text-gray-500 dark:text-gray-400 dark:bg-gray-800">This page allows you to payout jobs easier when you have many jobs or many nodes to manage. Currently you must have all your nodes on the same management wallet, while this page will semi work if you have multiple management wallets you'll experience more validation errors when using this. When you have selected the nodes you wish to payout, OT Hub will check they will succeed and then prompt each transaction to open in MetaMask.Note that this does not reduce the amount of transactions you need to send to the blockchain, you still need one transaction per payout.</p>
       </div>
-
       <div class="w-full dark:bg-gray-800 dark:border-gray-700 px-6 py-6">
         <h4 class="mb-4 text-lg font-semibold text-gray-600 dark:text-gray-300">Filters</h4>
         <div class="flex gap-4">
           <select bind:value={selectedBlockchainID} on:change="{handleBlockchainSelection}" class="w-auto bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-gray-300 dark:focus:ring-blue-500 dark:focus:border-blue-500">
             <option value="" disabled selected>Choose a blockchain</option>
-            {#each blockchains as blockchain}
-              <option value={blockchain.ID}>{blockchain.BlockchainName}</option>
-            {/each}
+            {#if blockchains} 
+              {#each blockchains as blockchain}
+                <option value={blockchain.ID}>{blockchain.BlockchainName}</option>
+              {/each}
+            {/if}
           </select>
-          
           <Checkbox bind:checked={includeActiveJobs} on:change={handleBlockchainSelection}>Active jobs</Checkbox>
           <Checkbox bind:checked={includeCompletedJobs} on:change={handleBlockchainSelection}>Completed jobs</Checkbox>
-
         </div>
       </div>
 
-      <div class="w-full dark:bg-gray-800 dark:border-gray-700 px-6 py-6">
-        
-        <div class="flex justify-between items-center">
-          <h4 class="text-lg font-semibold text-gray-600 dark:text-gray-300">Payouts</h4>
-          {#if !$selectedAccount}
-            <button on:click={connectToMetamask} type="button" class="focus:outline-none text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-900">Connect to MetaMask</button>      
-          {:else}
-            <div class="flex gap-4 items-center">
-              <div class="text-sm text-gray-500 dark:text-gray-400 dark:bg-gray-800"><span class="font-semibold">Selected account:</span> {$selectedAccount}</div>
-              <div class="text-sm text-gray-500 dark:text-gray-400 dark:bg-gray-800"><span class="font-semibold">Network ID:</span> {$chainId}</div>
-              {#if !payouts.find(payout => payout.selected)}
-              <div class="text-sm text-gray-500 dark:text-gray-400 dark:bg-gray-800">⚠️ There are no selected payouts.</div>      
-              {:else}
-                {#if payouts.find(payout => payout.selected && payout.verified === undefined)}
-                  <button on:click={verifySelectedPayouts} type="button" class="focus:outline-none text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-900">Verify selected payouts</button>   
-                {/if}
-                {#if payouts.find(payout => payout.selected && payout.verified !== undefined)}
-                  <input type="text" bind:value={gasPrice} class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-40 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Gas price">
-                  <button on:click={sendPayouts} type="button" class="focus:outline-none text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-900">Pay out</button>   
-                {/if}
-
-                
-
+      <div class="flex justify-between items-center">
+        <h4 class="text-lg font-semibold text-gray-600 dark:text-gray-300">Payouts</h4>
+        {#if !$selectedAccount}
+          <button on:click={connectToMetamask} type="button" class="focus:outline-none text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-900">Connect to MetaMask</button>      
+        {:else}
+          <div class="flex gap-4 items-center">
+            <div class="text-sm text-gray-500 dark:text-gray-400"><span class="font-semibold">Selected account:</span> {$selectedAccount}</div>
+            <div class="text-sm text-gray-500 dark:text-gray-400"><span class="font-semibold">Network ID:</span> {$chainId}</div>
+            {#if !payouts.find(payout => payout.selected)}
+            <div class="text-sm text-gray-500 dark:text-gray-400">⚠️ There are no selected payouts.</div>      
+            {:else}
+              {#if payouts.find(payout => payout.selected && payout.verified === undefined)}
+                <button on:click={verifySelectedPayouts} type="button" class="focus:outline-none text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-900">Verify selected payouts</button>   
               {/if}
-            </div>
-          {/if}
-        </div>
+              {#if payouts.find(payout => payout.selected && payout.verified !== undefined)}
+                <input type="text" bind:value={gasPrice} class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-40 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Gas price">
+                <button on:click={sendPayouts} type="button" class="focus:outline-none text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-900">Pay out</button>   
+              {/if}
+            {/if}
+          </div>
+        {/if}
+      </div>
 
-      
-        <div class="mt-4 overflow-x-auto shadow-md sm:rounded-lg">
+      <div class="w-full overflow-hidden rounded-lg shadow-xs">
+        <div class="w-full overflow-x-auto shadow-md sm:rounded-lg">
           {#if !selectedBlockchainID}
             <div class="p-4 text-sm text-gray-700 bg-gray-100 rounded-lg dark:bg-gray-700 dark:text-gray-300" role="alert">
               <span class="font-medium">⚠️ Please, select your blockchain</span>
             </div>
           {:else}
-          <table class="text-sm text-left text-gray-500 dark:text-gray-400" style="table-layout:fixed;">
+          <table class="w-full whitespace-no-wrap text-xs text-left text-gray-500 dark:text-gray-400">
             <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr>
-                <th scope="col" class="p-4"><Checkbox on:change={handleCheckAll} /></th>
-                <th scope="col" class="p-4 pl-0">Offer ID</th>
-                <th scope="col" class="p-4 pl-0">Paid out</th>
-                <th scope="col" class="p-4 pl-0">Total reward</th>
-                <th scope="col" class="p-4 pl-0">Estimated payout</th>
-                <th scope="col" class="p-4 pl-0 whitespace-nowrap">Last payout</th>
-                <th scope="col" class="p-4 pl-0 whitespace-nowrap">Verified</th>
+                <th scope="col" class="p-2 pl-2"><Checkbox on:change={handleCheckAll} /></th>
+                <th scope="col" class="p-2 pl-0">Offer ID</th>
+                <th scope="col" class="p-2 pl-0">Paid out</th>
+                <th scope="col" class="p-2 pl-0">Total reward</th>
+                <th scope="col" class="p-2 pl-0">Estimated payout</th>
+                <th scope="col" class="p-2 pl-0">Last payout</th>
+                <th scope="col" class="p-2 pl-0">Verified</th>
               </tr>
             </thead>
             {#if !selectedBlockchainID || loadingPayouts || !payouts.length}
@@ -237,33 +245,33 @@
               <tbody>
                 {#each payouts as payout, i}
                   <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                    <td class="w-4 p-4">
+                    <td class="p-2 pl-2">
                       <Checkbox bind:checked={payout.selected} />
                     </td>
-                    <td scope="row" class="p-4 pl-0 text-sm w-10 truncate">
-                      <span title="{payout.OfferID}">{payout.OfferID.substring(0, 10)}…</span>
+                    <td class="p-2 pl-0">
+                      <span title="{payout.OfferID}">{payout.OfferID}</span>
                     </td>
-                    <td class="p-4 pl-0 text-sm whitespace-nowrap">
+                    <td class="p-2 pl-0 whitespace-nowrap">
                       <span>{payout.PaidAmount.toFixed(16)}</span>
                       <span class="bg-gray-100 text-gray-800 text-xs font-medium ml-1 px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300">TRAC</span>
                     </td>
-                    <td class="p-4 pl-0 text-sm whitespace-nowrap">
+                    <td class="p-2 pl-0 whitespace-nowrap">
                       <span>{payout.TokenAmount.toFixed(16)}</span>
                       <span class="bg-gray-100 text-gray-800 text-xs font-medium ml-1 px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300">TRAC</span>
                     </td>
-                    <td class="p-4 pl-0 text-sm whitespace-nowrap">
+                    <td class="p-4 pl-0 whitespace-nowrap">
                       <span>{payout.EstimatedPayout.toFixed(16)}</span>
                       <span class="bg-gray-100 text-gray-800 text-xs font-medium ml-1 px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300">TRAC</span>
                     </td>
-                    <td class="p-4 pl-0 text-sm whitespace-nowrap">{new Date(payout.LastPayout).toLocaleString('en-GB', { dateStyle: 'short' })}</td>
+                    <td class="p-4 pl-0">{new Date(payout.LastPayout).toLocaleString('en-GB', { dateStyle: 'short' })}</td>
 
-                    <td class="p-4 pl-0 text-sm whitespace-nowrap">
+                    <td class="p-4 pl-0">
                       {#if payout.verified === undefined} 
-                        <span class="bg-gray-100 text-gray-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300">Unverified</span>
+                        <span class="bg-gray-100 text-gray-800 font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300">Unverified</span>
                       {:else if payout.verified} 
-                        <span class="bg-green-100 text-green-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-green-200 dark:text-green-900">Verified</span>
+                        <span class="bg-green-100 text-green-800 font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-green-200 dark:text-green-900">Verified</span>
                       {:else}
-                        <span class="bg-red-100 text-red-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-red-200 dark:text-red-900">Failed</span>
+                        <span class="bg-red-100 text-red-800 font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-red-200 dark:text-red-900">Failed</span>
                       {/if}
                     </td>
                   </tr>

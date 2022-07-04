@@ -1,17 +1,9 @@
 <script>
   import { onMount } from 'svelte'
-
-  const getArrayOfNNumbersFromZero = (quantityOfNumbersToGet) => Array.from(Array(quantityOfNumbersToGet).keys())
-  const getArrayOfNNumbersFromNumber = (quantityOfNumbersToGet, startingNumber) => getArrayOfNNumbersFromZero(quantityOfNumbersToGet).map(addendum => startingNumber + addendum)
-  const getArrayOfNNumbersToNumber = (quantityOfNumbersToGet, endingNumber) => getArrayOfNNumbersFromZero(quantityOfNumbersToGet).map(addendum => endingNumber - addendum).sort()
-  const createPaginationButtonsFromArrayOfPageNumbersAndSetActiveButtonBySelectedPageNumber = (arrayOfPageNumbers, selectedPageNumber) => arrayOfPageNumbers.map(pageNumber => ({ pageNumber, ...(pageNumber === selectedPageNumber) && { active: true }}))
+  import Pagination from './components/pagination.svelte'
 
   let jobsOnPage = []
-  let numberOfJobsLastTwentyYears
-  const numberOfJobsPerPage = 20
-  const numberOfVisiblePaginationButtons = 5
-  let numberOfPages
-  let paginationButtons = createPaginationButtonsFromArrayOfPageNumbersAndSetActiveButtonBySelectedPageNumber(getArrayOfNNumbersFromNumber(numberOfVisiblePaginationButtons, 1), 1)
+  let numberOfJobsPerPage = 20
   let loading = true
   let activePage = 1
   let keyToSortBy = 'FinalizedTimestamp'
@@ -19,15 +11,14 @@
   let searchQuery
 
   onMount(async () => {
-    numberOfJobsLastTwentyYears = await(await fetch('https://v5api.othub.info/api/Jobs/jobcreatedcountinperiod?timePeriod=years&time=20')).json()
-    numberOfPages = Math.ceil(numberOfJobsLastTwentyYears / numberOfJobsPerPage)
 		jobsOnPage = await getJobsFromAPI()
 	})
 
   const getJobsFromAPI = async (searchKey) => {
     loading = true
-    const requestURL = `https://v5api.othub.info/api/jobs/paging?_sort=${keyToSortBy}&_order=${sortOrder}${searchKey && searchQuery ? '&' + searchKey + '_like=' + searchQuery : ''}&_page=${activePage}&_limit=${numberOfJobsPerPage}`
-    const jobs = await(await fetch(requestURL)).json()
+    const requestURL = `/api/jobs/paging?_sort=${keyToSortBy}&_order=${sortOrder}${searchKey && searchQuery ? '&' + searchKey + '_like=' + searchQuery : ''}&_page=${activePage}&_limit=${numberOfJobsPerPage}`
+    const jobsRequest = await(await fetch(requestURL)).json()
+    const jobs = jobsRequest.data
     loading = false
     return jobs
   }
@@ -42,43 +33,6 @@
     jobsOnPage = await getJobsFromAPI()
   }
 
-  const recalculatePaginationAndSetActivePageByPageNumber = async (selectedPageNumber) => {
-    const arrayOfNumbersOfFirstPaginationButtons = getArrayOfNNumbersFromNumber(numberOfVisiblePaginationButtons, 1)
-    const arrayOfNumbersOfLastPaginationButtons = getArrayOfNNumbersToNumber(numberOfVisiblePaginationButtons, numberOfPages)
-    const medianIndexOfNumberOfVisiblePaginationButtons = (numberOfVisiblePaginationButtons % 2) + 1
-    const arrayOfNumbersOfFirstPaginationButtonsToMedian = arrayOfNumbersOfFirstPaginationButtons.slice(0, medianIndexOfNumberOfVisiblePaginationButtons)
-    const arrayOfNumbersOfLastPaginationButtonsFromMedian = arrayOfNumbersOfLastPaginationButtons.slice(medianIndexOfNumberOfVisiblePaginationButtons)
-    const selectedPageIsAmongFirstPaginationButtonsToMedian = arrayOfNumbersOfFirstPaginationButtonsToMedian.includes(selectedPageNumber)
-    const selectedPageIsAmongLastPaginationButtonsFromMedian = arrayOfNumbersOfLastPaginationButtonsFromMedian.includes(selectedPageNumber)
-    if (selectedPageIsAmongFirstPaginationButtonsToMedian) paginationButtons = createPaginationButtonsFromArrayOfPageNumbersAndSetActiveButtonBySelectedPageNumber(arrayOfNumbersOfFirstPaginationButtons, selectedPageNumber)
-    if (selectedPageIsAmongLastPaginationButtonsFromMedian) paginationButtons = createPaginationButtonsFromArrayOfPageNumbersAndSetActiveButtonBySelectedPageNumber(arrayOfNumbersOfLastPaginationButtons, selectedPageNumber)
-    const arrayOfNumbersOfPaginationButtonsAroundSelectedPageNumber = getArrayOfNNumbersFromNumber(numberOfVisiblePaginationButtons, selectedPageNumber - 2)
-    if (!selectedPageIsAmongFirstPaginationButtonsToMedian && !selectedPageIsAmongLastPaginationButtonsFromMedian) paginationButtons = createPaginationButtonsFromArrayOfPageNumbersAndSetActiveButtonBySelectedPageNumber(arrayOfNumbersOfPaginationButtonsAroundSelectedPageNumber, selectedPageNumber)
-    activePage = selectedPageNumber
-    jobsOnPage = await getJobsFromAPI()
-  }
-
-  const loadFirstPage = () => {
-    const currentActivePageNumber = getCurrentActivePageNumber()
-    if (currentActivePageNumber !== 1) recalculatePaginationAndSetActivePageByPageNumber(1)
-  }
-
-  const loadLastPage = () => {
-    const currentActivePageNumber = getCurrentActivePageNumber()
-    if (currentActivePageNumber !== numberOfPages) recalculatePaginationAndSetActivePageByPageNumber(numberOfPages)
-  }
-
-  const loadNextPage = () => {
-    const currentActivePageNumber = getCurrentActivePageNumber()
-    if (currentActivePageNumber !== numberOfPages) recalculatePaginationAndSetActivePageByPageNumber(currentActivePageNumber + 1)
-  }
-
-  const loadPreviousPage = () => {
-    const currentActivePageNumber = getCurrentActivePageNumber()
-    if (currentActivePageNumber !== 1) recalculatePaginationAndSetActivePageByPageNumber(currentActivePageNumber - 1)
-  }
-
-  const getCurrentActivePageNumber = () => paginationButtons.find(paginationButton => paginationButton.active).pageNumber
 
   const searchByKey = async (searchKey) => {
     jobsOnPage = await getJobsFromAPI(searchKey)
@@ -152,7 +106,6 @@
                   </button>
                 {/if}
               </th>
-              <!-- <th class="px-4 py-3">Price factor</th> -->
               <th class="px-4 py-3">Status</th>
             </tr>
           </thead>
@@ -207,62 +160,8 @@
           </tbody>
         </table>
       </div>
-      <div class="grid px-4 py-3 text-xs font-semibold tracking-wide text-gray-500 uppercase border-t dark:border-gray-700 bg-gray-50 sm:grid-cols-9 dark:text-gray-400 dark:bg-gray-800 min-h-50">
-        <span class="flex items-center col-span-3"> Showing {(numberOfJobsPerPage * (activePage - 1)) + 1}-{numberOfJobsPerPage * activePage} of {numberOfJobsLastTwentyYears}</span>
-        <span class="col-span-2">&nbsp;</span>
-        <!-- Pagination -->
-        <span class="flex col-span-4 mt-2 sm:mt-auto sm:justify-end">
-          <nav aria-label="Table navigation">
-            <ul class="inline-flex items-center">
-              <li>
-                <button class="px-3 py-1 rounded-md rounded-l-lg focus:outline-none focus:shadow-outline-purple" aria-label="First" on:click={loadFirstPage}>
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path fill-rule="evenodd" clip-rule="evenodd" d="M14.707 5.29303C14.8945 5.48056 14.9998 5.73487 14.9998 6.00003C14.9998 6.26519 14.8945 6.5195 14.707 6.70703L11.414 10L14.707 13.293C14.8892 13.4816 14.99 13.7342 14.9877 13.9964C14.9854 14.2586 14.8802 14.5094 14.6948 14.6948C14.5094 14.8803 14.2586 14.9854 13.9964 14.9877C13.7342 14.99 13.4816 14.8892 13.293 14.707L9.293 10.707C9.10553 10.5195 9.00021 10.2652 9.00021 10C9.00021 9.73487 9.10553 9.48056 9.293 9.29303L13.293 5.29303C13.4805 5.10556 13.7348 5.00024 14 5.00024C14.2652 5.00024 14.5195 5.10556 14.707 5.29303V5.29303Z" fill="black"/>
-                    <path fill-rule="evenodd" clip-rule="evenodd" d="M10.7068 5.29303C10.8943 5.48056 10.9996 5.73487 10.9996 6.00003C10.9996 6.26519 10.8943 6.5195 10.7068 6.70703L7.41379 10L10.7068 13.293C10.8889 13.4816 10.9897 13.7342 10.9875 13.9964C10.9852 14.2586 10.88 14.5094 10.6946 14.6948C10.5092 14.8803 10.2584 14.9854 9.99619 14.9877C9.73399 14.99 9.48139 14.8892 9.29279 14.707L5.29279 10.707C5.10532 10.5195 5 10.2652 5 10C5 9.73487 5.10532 9.48056 5.29279 9.29303L9.29279 5.29303C9.48031 5.10556 9.73462 5.00024 9.99979 5.00024C10.265 5.00024 10.5193 5.10556 10.7068 5.29303V5.29303Z" fill="black"/>
-                  </svg>
-                </button>
-              </li>
-              <li>
-                <button class="px-3 py-1 rounded-md rounded-l-lg focus:outline-none focus:shadow-outline-purple" aria-label="Previous" on:click={loadPreviousPage}>
-                  <svg aria-hidden="true" class="w-4 h-4 fill-current" viewBox="0 0 20 20">
-                    <path d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" fill-rule="evenodd" />
-                  </svg>
-                </button>
-              </li>                
-            {#each paginationButtons as paginationButton}
-              <li>
-                <button 
-                  class="px-3 py-1 rounded-md focus:outline-none focus:shadow-outline-purple" 
-                  class:text-white={paginationButton.active} 
-                  class:transition-colors={paginationButton.active} 
-                  class:duration-150={paginationButton.active} 
-                  class:bg-purple-600={paginationButton.active} 
-                  class:border={paginationButton.active} 
-                  class:border-r-0={paginationButton.active} 
-                  class:border-purple-600={paginationButton.active}
-                  on:click={() => recalculatePaginationAndSetActivePageByPageNumber(paginationButton.pageNumber)}>
-                  {paginationButton.pageNumber}
-                </button>
-              </li>
-            {/each}
-              <li>
-                <button class="px-3 py-1 rounded-md rounded-r-lg focus:outline-none focus:shadow-outline-purple" aria-label="Next" on:click={loadNextPage}>
-                  <svg class="w-4 h-4 fill-current" aria-hidden="true" viewBox="0 0 20 20">
-                    <path d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" fill-rule="evenodd"/>
-                  </svg>
-                </button>
-              </li>
-              <li>
-                <button class="px-3 py-1 rounded-md rounded-r-lg focus:outline-none focus:shadow-outline-purple" aria-label="Last" on:click={loadLastPage}>
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path fill-rule="evenodd" clip-rule="evenodd" d="M5.293 14.707C5.10553 14.5194 5.00021 14.2651 5.00021 14C5.00021 13.7348 5.10553 13.4805 5.293 13.293L8.586 9.99997L5.293 6.70697C5.11084 6.51837 5.01005 6.26576 5.01233 6.00357C5.01461 5.74137 5.11977 5.49056 5.30518 5.30515C5.49059 5.11974 5.7414 5.01457 6.0036 5.0123C6.2658 5.01002 6.5184 5.11081 6.707 5.29297L10.707 9.29297C10.8945 9.4805 10.9998 9.73481 10.9998 9.99997C10.9998 10.2651 10.8945 10.5194 10.707 10.707L6.707 14.707C6.51947 14.8944 6.26516 14.9998 6 14.9998C5.73484 14.9998 5.48053 14.8944 5.293 14.707V14.707Z" fill="black"/>
-                    <path fill-rule="evenodd" clip-rule="evenodd" d="M9.29321 14.707C9.10574 14.5194 9.00043 14.2651 9.00043 14C9.00043 13.7348 9.10574 13.4805 9.29321 13.293L12.5862 9.99997L9.29321 6.70697C9.11106 6.51837 9.01026 6.26576 9.01254 6.00357C9.01482 5.74137 9.11999 5.49056 9.3054 5.30515C9.4908 5.11974 9.74162 5.01457 10.0038 5.0123C10.266 5.01002 10.5186 5.11081 10.7072 5.29297L14.7072 9.29297C14.8947 9.4805 15 9.73481 15 9.99997C15 10.2651 14.8947 10.5194 14.7072 10.707L10.7072 14.707C10.5197 14.8944 10.2654 14.9998 10.0002 14.9998C9.73505 14.9998 9.48074 14.8944 9.29321 14.707V14.707Z" fill="black"/>
-                  </svg>
-                </button>
-              </li>
-            </ul>
-          </nav>
-        </span>
+      <div class="px-4 py-3 text-xs font-semibold tracking-wide text-gray-500 uppercase border-t dark:border-gray-700 bg-gray-50 sm:grid-cols-9 dark:text-gray-400 dark:bg-gray-800">
+        <Pagination on:pagination={getJobsFromAPI} totalNumberOfItems={jobsOnPage.length} bind:activePageNumber={activePage} bind:numberOfItemsPerPage={numberOfJobsPerPage}/>
       </div>
     </div>
   </div>

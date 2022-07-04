@@ -1,6 +1,6 @@
 <script lang="ts">
-  import loginOffice from '$src/routes/dashboard/Images/login-office.jpeg'
-  import loginOfficeDark from '$src/routes/dashboard/Images/login-office-dark.jpeg'
+  import loginOffice from '$lib/Images/login-office.jpeg'
+  import loginOfficeDark from '$lib/Images/login-office-dark.jpeg'
 
   const rands = ['', 'dark']
   const randCls = rands[Math.floor(Math.random() * rands.length)]
