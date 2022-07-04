@@ -1,5 +1,6 @@
 import { config } from 'dotenv'
 const { ACCESS_TOKEN } = config().parsed || process.env.ACCESS_TOKEN
+console.log(ACCESS_TOKEN)
 
 export const get = async (args) => await proxyRequest(args)
 export const post = async (args) => await proxyRequest(args)
