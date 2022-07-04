@@ -17,7 +17,9 @@ const proxyRequest = async ({ params, url, request }) => {
         ...(method === 'POST') && { 'Content-Type': 'application/json' },
       },
     })
+    console.log("Request: ", APIrequest)
     const text = await APIrequest.text()
+    console.log("Response:", text)
     const { headers } = APIrequest
     const totalCount = headers.get('x-total-count')
     return {
