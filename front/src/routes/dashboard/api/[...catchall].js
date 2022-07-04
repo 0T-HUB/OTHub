@@ -6,7 +6,7 @@ export const get = async (args) => await proxyRequest(args)
 export const post = async (args) => await proxyRequest(args)
 export const del = async (args) => await proxyRequest(args)
 
-const proxyRequest = async ({ params, url, request }) => {
+const proxyRequest = async ({ url, request }) => {
   try {
     const { method } = request
     const endpoint = url.href.split('/api/')[1]
@@ -17,18 +17,14 @@ const proxyRequest = async ({ params, url, request }) => {
         ...(method === 'POST') && { 'Content-Type': 'application/json' },
       },
     })
-    console.log("Request: ", APIrequest)
-    const text = await APIrequest.text()
-    console.log("Response:", text)
+    const response = await APIrequest.json()
     const { headers } = APIrequest
     const totalCount = headers.get('x-total-count')
     return {
       status: 200,
-      ...(text) && { 
-        body: { 
-          data: JSON.parse(text),
-          ...(totalCount) && { totalCount }
-        }
+      body: { 
+        ...(response) && { data: response },
+        ...(totalCount) && { totalCount }
       }
     }
   }
