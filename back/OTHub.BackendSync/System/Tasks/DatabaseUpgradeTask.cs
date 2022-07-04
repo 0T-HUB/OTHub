@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using System.Data;
 using System.Linq;
 using System.Threading;
@@ -16,7 +15,7 @@ namespace OTHub.BackendSync.System.Tasks
         public static void Execute()
         {
             using (var connection =
-                new MySqlConnection(OTHubSettings.Instance.MariaDB.ConnectionString))
+                   new MySqlConnection(OTHubSettings.Instance.MariaDB.ConnectionString))
             {
                 var update = @"ALTER TABLE OTIdentity
 ADD COLUMN IF NOT EXISTS	`Approved` BIT(1) NULL DEFAULT NULL";
@@ -139,7 +138,7 @@ ADD COLUMN IF NOT EXISTS	`LastSyncedTimestamp` datetime NULL DEFAULT NULL");
                         nodeId = nodeId.Substring(nodeId.Length - 40);
 
                         connection.Execute("UPDATE OTOffer SET DCNodeID = @nodeId WHERE OfferID = @offerId",
-                            new {nodeId, offerId});
+                            new { nodeId, offerId });
                     }
                 }
 
@@ -305,12 +304,10 @@ ADD COLUMN IF NOT EXISTS `NetworkId` TEXT NULL DEFAULT NULL");
 ADD COLUMN IF NOT EXISTS `EstimatedLambda` DECIMAL(10,2) NULL DEFAULT NULL");
 
 
-
                 connection.Execute(
                     @"CREATE INDEX IF NOT EXISTS `Otoffer_DCNodeID` ON otoffer  (`DCNodeId`) USING BTREE;
 CREATE INDEX IF NOT EXISTS `OTContract_Profile_ProfileCreated_Profile` ON OTContract_Profile_ProfileCreated  (`Profile`) USING BTREE;
 CREATE INDEX IF NOT EXISTS `OTContract_Profile_IdentityCreated_NewIdentity` ON OTContract_Profile_IdentityCreated  (`NewIdentity`) USING BTREE;");
-
 
 
                 connection.Execute(@"DELETE FROM SystemStatus");
@@ -376,7 +373,8 @@ ENGINE=InnoDB
                 if (connection.ExecuteScalar<int>(@"SELECT COUNT(*) FROM blockchains") <= 0)
                 {
                     Thread.Sleep(2000);
-                    throw new Exception("Blockchains table needs to be populated. Make sure blockchain ID 1 is used for the original blockchain to make historical data correct.");
+                    throw new Exception(
+                        "Blockchains table needs to be populated. Make sure blockchain ID 1 is used for the original blockchain to make historical data correct.");
                 }
 
 
@@ -391,14 +389,15 @@ REFERENCED_TABLE_SCHEMA = '{OTHubSettings.Instance.MariaDB.Database}' AND
 
                 if (!isUpgradedForMultiChain)
                 {
-                    connection.Execute(@"ALTER TABLE ethblock ADD COLUMN IF NOT EXISTS `BlockchainID` INT NOT NULL DEFAULT 1");
+                    connection.Execute(
+                        @"ALTER TABLE ethblock ADD COLUMN IF NOT EXISTS `BlockchainID` INT NOT NULL DEFAULT 1");
                     //connection.Execute(@"UPDATE ethblock SET blockchainid = 1 WHERE blockchainid IS null"); //TODO long term needs something better
 
                     //connection.Execute(@"ALTER TABLE ethblock MODIFY COLUMN `BlockchainID` INT NOT NULL");
                     connection.Execute(@"ALTER TABLE `ethblock`
 ADD CONSTRAINT `FK_ethblock_blockchains` FOREIGN KEY IF NOT EXISTS
 (`blockchainid`) REFERENCES `blockchains` (`id`);");
-            
+
 
                     connection.Execute(@"ALTER TABLE marketvaluebyday
 ADD COLUMN IF NOT EXISTS `BlockchainID` INT NOT NULL DEFAULT 1");
@@ -719,7 +718,6 @@ ADD CONSTRAINT `FK_systemstatus_blockchains` FOREIGN KEY IF NOT EXISTS
 
                     connection.Execute(@"ALTER TABLE systemstatus
 ADD COLUMN IF NOT EXISTS `ParentName` VARCHAR(100) NULL");
-
                 }
 
                 connection.Execute(
@@ -906,7 +904,8 @@ AUTO_INCREMENT=3
 
 ");
 
-                connection.Execute(@"INSERT INTO telegramsettings (UserID, NotificationsEnabled, JobWonEnabled, HasReceivedMessageFromUser)
+                connection.Execute(
+                    @"INSERT INTO telegramsettings (UserID, NotificationsEnabled, JobWonEnabled, HasReceivedMessageFromUser)
 SELECT u.ID, 1, 1, 0 FROM users u
 WHERE u.TelegramUserID IS NOT NULL AND (SELECT COUNT(*) FROM telegramsettings ss WHERE ss.UserID = u.ID) = 0");
 
@@ -926,7 +925,6 @@ COLLATE='latin1_swedish_ci'
 ENGINE=InnoDB
 ;
 ");
-
             }
         }
     }

@@ -21,6 +21,7 @@ namespace OTHub.APIServer
         public static IWebHost BuildWebHost(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
                 .UseStartup<Startup>()
+                
                 .UseKestrel(o => o.AddServerHeader = false)
                 .ConfigureAppConfiguration((context, builder) =>
                 {
