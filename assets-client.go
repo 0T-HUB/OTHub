@@ -105,8 +105,7 @@ func (ac *assetsClient) Get(ual string, options GetOptions) ([]byte, error) {
 	return resp, nil
 }
 
-// The following are functions that were not used (or left in a TODO state)
-// in the original implementation but are kept for future reference.
+// functions left in TDO state 
 
 func (ac *assetsClient) GetStateCommitHashes(ual string) ([]byte, error) {
 	opt := ResolveRequestOptions{[]string{ual}}

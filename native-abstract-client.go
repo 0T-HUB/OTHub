@@ -1,5 +1,4 @@
-// EXPLANATION
-// Go doesn't support struct extending/inheritance, so to deal with this,
+// Go doesn't support struct extending/inheritance
 // this file includes NativeClient and AbstractClient in one Single Client
 
 package client
@@ -22,14 +21,14 @@ import (
 	"github.com/nebulouslabs/merkletree"
 )
 
-// Constants signifying the state of a request
+//const with state of the request
 const (
 	Pending   string = "PENDING"
 	Completed        = "COMPLETED"
 	Failed           = "FAILED"
 )
 
-// Some default values used in the API
+// default values used in the API
 var (
 	defaultMaxNumberOfRetries int = 5
 	defaultTimeoutInSeconds   int = 25
@@ -45,7 +44,7 @@ type AbstractClientOptions struct {
 	MaxNumberOfRetries int
 }
 
-// The struct that mixes an AbstractClient and a NativeClient
+//  struct mixing AbstractClient and a NativeClient
 type nativeAbstractClient struct {
 	LogLevel           golog.Level
 	MaxNumberOfRetries int
@@ -96,9 +95,9 @@ func newNativeAbstractClient(options AbstractClientOptions) (nativeAbstractClien
 
 }
 
-//
+
 // Get node information (version, is auto upgrade enabled, is telemetry enabled)
-//
+
 
 func (ac *nativeAbstractClient) NodeInfo() (*http.Response, error) {
 	ac.Logger.Debug("Sending node info request")
@@ -396,6 +395,7 @@ func (ac *nativeAbstractClient) searchRequest(options SearchRequestOptions) ([]b
 	return b, nil
 }
 
+//function left in TODO
 // type searchResultResponse struct {
 // 	Results []struct {
 // 		ID string `json:"id"`
@@ -751,8 +751,9 @@ func (ac *nativeAbstractClient) validateProof(rootHash []byte, proof [][]byte) b
 	return true
 }
 
-// WARNING
-// This function may have been written incorrectly since the first original js code
+
+// This function is maybe wrong
+//because of the js original func
 func (ac *nativeAbstractClient) fetchRootHash(assertionId string) (string, error) {
 	result, err := ac.Resolve(ResolveRequestOptions{[]string{assertionId}})
 	if err != nil {
