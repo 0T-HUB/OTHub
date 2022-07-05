@@ -104,7 +104,6 @@ WHERE I.Version > 0 AND I.Identity = @identity", new
                             {
                                 string userID = user.UserID;
                                 string nodeName = user.NodeName;
-                                long? telegramUserID = user.TelegramUserID;
                                 bool? notificationsEnabled = user.NotificationsEnabled == 1;
                                 bool? jobWonEnabled = user.JobWonEnabled == 1;
                                 bool? hasReceivedMessageFromUser = user.HasReceivedMessageFromUser == 1;
