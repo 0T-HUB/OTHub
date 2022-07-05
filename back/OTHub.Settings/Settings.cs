@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace OTHub.Settings
 {
+    // parameters for all settings : blockchain, webserver, mariadb, telegram, etc ...
     public class OTHubSettings
     {
 

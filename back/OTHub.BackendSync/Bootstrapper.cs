@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using OTHub.BackendSync.Blockchain.Tasks.BlockchainMaintenance;
 using OTHub.BackendSync.Blockchain.Tasks.BlockchainSync;
 using OTHub.BackendSync.Blockchain.Tasks.Misc;
-using OTHub.BackendSync.Blockchain.Tasks.Tools;
 using OTHub.BackendSync.Logging;
 using OTHub.BackendSync.System.Tasks;
 
@@ -43,16 +42,7 @@ namespace OTHub.BackendSync
 
                 await controller.Start();
             }));
-
-            tasks.Add(Task.Run(async () =>
-            {
-                TaskController controller = new TaskController(Source.Tools);
-
-                controller.Schedule(new ToolsTask(), true, false);
-
-                await controller.Start();
-            }));
-
+            
             tasks.Add(Task.Run(async () =>
             {
                 TaskController controller = new TaskController(Source.Tools);
