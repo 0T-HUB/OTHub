@@ -54,12 +54,6 @@ namespace OTHub.APIServer
 
             services.AddCors(options =>
             {
-                //options.AddPolicy("AllowAll",
-                //    builder =>
-                //    {
-                //        builder.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()
-                //            .SetPreflightMaxAge(TimeSpan.FromDays(7));
-                //    });
 
                 options.AddPolicy("SignalR",
                     builder => builder.WithOrigins(origins.ToArray())
@@ -131,7 +125,6 @@ namespace OTHub.APIServer
 
             services.AddSingleton<RabbitMQService>();
 
-            services.AddSingleton<TelegramBot>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -171,14 +164,7 @@ namespace OTHub.APIServer
 
             app.UseRouting();
             app.UseAuthorization();
-
-            //var webSocketOptions = new WebSocketOptions()
-            //{
-            //    KeepAliveInterval = TimeSpan.FromSeconds(120),
-            //    AllowedOrigins = { "*" }
-            //};
-
-            //app.UseWebSockets();
+            
             app.UseWebSockets();
 
             app.UseEndpoints(endpoints =>
@@ -189,7 +175,6 @@ namespace OTHub.APIServer
 
             //Loads up the singleton
             app.ApplicationServices.GetService<RabbitMQService>();
-            app.ApplicationServices.GetService<TelegramBot>();
         }
     }
 }
