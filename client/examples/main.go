@@ -8,7 +8,7 @@ import (
 	"github.com/ivpusic/golog"
 )
 
-const OT_NODE_HOSTNAME string = "0.0.0.0"
+const OT_NODE_HOSTNAME string = "167.99.210.73"
 const OT_NODE_PORT int = 8900
 
 func main() {
@@ -35,7 +35,7 @@ func main() {
 	}
 	fmt.Println(createOut)
 
-	// on update notre asset 
+	// on update notre asset
 	ual := "" // Set this to the UAL returned when provisioning an assert to update it
 	updateOpt := d.CreateOptions{Filepath: "./kg-example.json", Data: "", Keywords: []string{"Product", "Executive Objects", "ACME"}}
 	updateOut, err := dkg.Assets.Update(ual, updateOpt)
@@ -65,13 +65,13 @@ func main() {
 
 	// recherche d' assertions
 	searchAssertionsOpt := d.SearchRequestOptions{
-		Query:            "Product",
-		ResultType:       "assertions",
-		Prefix:           true,
-		Limit:            20,
-		Issuers:          []string{"Issuer 1", "Issuer 2"}, //pas utilisé par l'API mais présent dans le js
-		SchemaTypes:      "Schema Type 1",                  //pas utilisé par l'API mais présent dans le js
-		Timeout:          25,
+		Query:       "Product",
+		ResultType:  "assertions",
+		Prefix:      true,
+		Limit:       20,
+		Issuers:     []string{"Issuer 1", "Issuer 2"}, //pas utilisé par l'API mais présent dans le js
+		SchemaTypes: "Schema Type 1",                  //pas utilisé par l'API mais présent dans le js
+		Timeout:     25,
 	}
 	searchAssertionsOut, err := dkg.Client.Search(searchAssertionsOpt)
 	if err != nil {
