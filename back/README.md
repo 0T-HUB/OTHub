@@ -2,12 +2,6 @@
 
 OT Hub is a community-made project for live insights into the OriginTrail Decentralized Network.
 
-## Websites
-
-Mainnet: https://othub.origin-trail.network
-
-Testnet: https://othub-testnet.origin-trail.network
-
 ## Code Projects
 - OTHub.ApiServer - This project is the web server API written in C#
 - OTHub.BackendSync - This project is the backend synchronisation process written in C#
