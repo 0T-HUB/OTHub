@@ -23,14 +23,6 @@ namespace OTHub.APIServer.Ethereum
 {
     public static class BlockchainHelper
     {
-        public static byte[] CalculateHash(string value)
-        {
-            var input = Encoding.UTF8.GetBytes(value);
-            var output = CalculateHash(input);
-            return output;
-        }
-
-
         public static byte[] CalculateHash(byte[] value)
         {
             var digest = new KeccakDigest(256);
@@ -57,8 +49,6 @@ namespace OTHub.APIServer.Ethereum
 
             await using (var connection = new MySqlConnection(OTHubSettings.Instance.MariaDB.ConnectionString))
             {
-
-
 
                 var holdingStorageAddressModel = await connection.QueryFirstOrDefaultAsync<ContractAddress>(ContractsSql.GetHoldingStorageAddressByAddress, new
                 {

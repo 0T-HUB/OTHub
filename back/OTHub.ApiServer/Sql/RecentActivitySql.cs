@@ -5,7 +5,7 @@ namespace OTHub.APIServer.Sql
     public static class RecentActivitySql
     {
         public const String GetRecentActivitySql =
-            @"SELECT OH.Holder Identity, O.OfferId, O.CreatedTimestamp as Timestamp, O.TokenAmountPerHolder, 
+            @"SELECT OH.Holder, Identity, O.OfferId, O.CreatedTimestamp as Timestamp, O.TokenAmountPerHolder, 
 (CASE WHEN O.IsFinalized = 1  THEN DATE_Add(O.FinalizedTimeStamp, INTERVAL + O.HoldingTimeInMinutes MINUTE) ELSE NULL END) as EndTimestamp
 FROM OTOffer_Holders OH
 JOIN OTOffer O ON O.OfferID = OH.OfferID

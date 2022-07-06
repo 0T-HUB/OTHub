@@ -6,13 +6,15 @@ export const get = async (args) => await proxyRequest(args)
 export const post = async (args) => await proxyRequest(args)
 export const del = async (args) => await proxyRequest(args)
 
+
 const proxyRequest = async ({ url, request }) => {
   try {
+    console.log("url = ",url.pathname)
     const { method } = request
     const endpoint = url.href.split('/api/')[1]
-    const APIrequest = await fetch(`https://v5api.othub.info/api/${endpoint}`, { 
+    const APIrequest = await fetch(`https://v5api.othub.info/api/${endpoint}`, {
       method,
-      headers: { 
+      headers: {
         'Authorization': `Bearer ${ACCESS_TOKEN}`,
         ...(method === 'POST') && { 'Content-Type': 'application/json' },
       },
@@ -22,7 +24,7 @@ const proxyRequest = async ({ url, request }) => {
     const totalCount = headers.get('x-total-count')
     return {
       status: 200,
-      body: { 
+      body: {
         ...(response) && { data: response },
         ...(totalCount) && { totalCount }
       }

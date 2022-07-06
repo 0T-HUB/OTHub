@@ -22,15 +22,13 @@ namespace OTHub.APIServer.Messaging
     public class RabbitMQService
     {
         private readonly IHubContext<NotificationsHub> _hubContext;
-        private readonly TelegramBot _bot;
         private readonly ConnectionFactory _factory;
         private IConnection _connection;
         private IModel _channel;
 
-        public RabbitMQService(IHubContext<NotificationsHub> hubContext, TelegramBot bot)
+        public RabbitMQService(IHubContext<NotificationsHub> hubContext)
         {
             _hubContext = hubContext;
-            _bot = bot;
             _factory = new ConnectionFactory
                 {HostName = "localhost", RequestedHeartbeat = TimeSpan.FromMinutes(4), DispatchConsumersAsync = true};
             Connect();
@@ -106,7 +104,6 @@ WHERE I.Version > 0 AND I.Identity = @identity", new
                             {
                                 string userID = user.UserID;
                                 string nodeName = user.NodeName;
-                                long? telegramUserID = user.TelegramUserID;
                                 bool? notificationsEnabled = user.NotificationsEnabled == 1;
                                 bool? jobWonEnabled = user.JobWonEnabled == 1;
                                 bool? hasReceivedMessageFromUser = user.HasReceivedMessageFromUser == 1;
@@ -124,18 +121,7 @@ WHERE I.Version > 0 AND I.Identity = @identity", new
                                     {
 
                                     }
-
-                                    if (telegramUserID.HasValue && notificationsEnabled == true && jobWonEnabled == true && hasReceivedMessageFromUser == true)
-                                    {
-                                        try
-                                        {
-                                            await _bot.JobWon(userID, telegramUserID.Value, data.title, data.description, $"https://othub.origin-trail.network/{data.url}");
-                                        }
-                                        catch (Exception ex)
-                                        {
-
-                                        }
-                                    }
+                                    
                                 }
                             }
                         }

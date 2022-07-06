@@ -5,7 +5,7 @@
   import Spinner from './components/spinner.svelte'
 
   import * as API from '$modules/api.module'
-  
+
   let badge
   let dashboardData
   let blockchainDistribution
@@ -14,7 +14,7 @@
   let gaugeCanvas
   let lineChartContext
   let lineChartCanvas
-  
+
 
   onMount(async () => {
     gaugeContext = gaugeCanvas.getContext('2d')
@@ -132,8 +132,8 @@
             {#if dashboardData}
               <div class="flex items-center">
                 <span class='text-lg font-semibold text-gray-700 dark:text-gray-200'>${dashboardData.PriceUsd.toFixed(4)}</span>
-                <span 
-                  class="bg-green-100 text-green-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-green-200 dark:text-green-900 ml-2" 
+                <span
+                  class="bg-green-100 text-green-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-green-200 dark:text-green-900 ml-2"
                   class:bg-red-100={(dashboardData.PercentChange24H < 0)}
                   class:text-red-800={(dashboardData.PercentChange24H < 0)}
                   class:dark:text-red-900={(dashboardData.PercentChange24H < 0)}
@@ -206,10 +206,10 @@
               />
             </svg>
           </div>
-          
-          
+
+
           <div>
-            <p class='mb-2 text-sm font-medium text-gray-600 dark:text-gray-400'>Jobs</p>
+            <p class='mb-2 text-sm font-medium text-gray-600 dark:text-gray-400'>Active Jobs</p>
             {#if dashboardData}
               <p class='text-lg font-semibold text-gray-700 dark:text-gray-200'>{dashboardData.All.ActiveJobs.toLocaleString('en-US')}</p>
             {:else}
@@ -283,7 +283,7 @@
             <span>Ethereum</span>
           </div>
           <div class='flex items-center'>
-            <span class='inline-block w-3 h-3 mr-1 bg-teal-600 rounded-full' />
+            <span class='inline-block w-3 h-3 mr-1 bg-yellow-200 rounded-full' />
             <span>Polygon</span>
           </div>
           <div class='flex items-center'>
@@ -297,13 +297,13 @@
 
     <div class='min-w-0 h-96 p-4 bg-white rounded-lg shadow-xs dark:bg-gray-800'>
       <h4 class='mb-4 font-semibold text-gray-800 dark:text-gray-300'>Jobs</h4>
-      
+
       {#if !jobs}
         <div class="w-full h-full flex items-center justify-center">
           <Spinner />
         </div>
       {/if}
-      
+
       <div class="h-60 w-full">
         <canvas bind:this={lineChartCanvas} class="h-full w-full" class:hidden={!jobs}/>
       </div>

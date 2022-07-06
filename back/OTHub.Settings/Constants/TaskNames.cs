@@ -4,6 +4,7 @@ using System.Text;
 
 namespace OTHub.Settings.Constants
 {
+    //name task 
     public static class TaskNames
     {
         public const string Notifications = "Notifications";
