@@ -1,5 +1,6 @@
 ﻿using AsyncKeyedLock;
 using System;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace OTHub.BackendSync
@@ -17,11 +18,13 @@ namespace OTHub.BackendSync
             return _asyncKeyedLocker.IsInUse(type);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static async ValueTask<IDisposable> Lock(LockType type)
         {
             return await _asyncKeyedLocker.LockAsync(type).ConfigureAwait(false);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static async ValueTask<IDisposable> Lock(LockType type, int milliseconds)
         {
             var releaser = _asyncKeyedLocker.GetOrAdd(type);
