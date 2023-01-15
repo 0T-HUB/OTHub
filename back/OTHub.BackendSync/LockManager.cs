@@ -28,7 +28,7 @@ namespace OTHub.BackendSync
         public static async ValueTask<IDisposable> Lock(LockType type, int milliseconds)
         {
             var releaser = _asyncKeyedLocker.GetOrAdd(type);
-            if (!await releaser.SemaphoreSlim.WaitAsync(milliseconds))
+            if (!await releaser.SemaphoreSlim.WaitAsync(milliseconds).ConfigureAwait(false))
             {
                 throw new Exception("Lock did not release in time.");
             }
