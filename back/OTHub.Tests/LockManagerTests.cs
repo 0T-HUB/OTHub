@@ -11,17 +11,21 @@ namespace OTHub.Tests
         [Fact]
         public async Task LockManager_ConfirmLockingIsSingleEntry()
         {
-            LockRelease lck = LockManager.GetLock(LockType.OfferCreated);
+            Assert.False(LockManager.IsInUse(LockType.OfferCreated));
 
-            Assert.Equal(1, lck.LockCurrentCount);
+            using (await LockManager.Lock(LockType.OfferCreated))
+            {
+                Assert.True(LockManager.IsInUse(LockType.OfferCreated));
+            }
 
-            await lck.Lock();
-
-            Assert.Equal(0, lck.LockCurrentCount);
+            Assert.False(LockManager.IsInUse(LockType.OfferCreated));
 
             var type = typeof(Exception);
-            await Assert.ThrowsAsync(type, () => lck.Lock(0));
-        } 
+            using (await LockManager.Lock(LockType.OfferCreated))
+            {
+                await Assert.ThrowsAsync(type, async () => await LockManager.Lock(LockType.OfferCreated, 0));
+            }
+        }
 
     }
 }
